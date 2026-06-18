@@ -131,8 +131,6 @@ export default function Activities() {
   });
 
   const invalidateAll = () => {
-    queryClient.invalidateQueries({ queryKey: getListActivitiesQueryKey({ archived: false }) });
-    queryClient.invalidateQueries({ queryKey: getListActivitiesQueryKey({ archived: true }) });
     queryClient.invalidateQueries({ queryKey: getListActivitiesQueryKey() });
   };
 

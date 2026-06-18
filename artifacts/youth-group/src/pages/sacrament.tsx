@@ -56,7 +56,7 @@ export default function Sacrament() {
     query: { queryKey: getListUsersQueryKey() },
   });
 
-  const activeUsers = users?.filter((u) => u.status === "active") ?? [];
+  const activeUsers = users?.filter((u) => u.status === "active" && u.role !== "leader") ?? [];
 
   const createMutation = useCreateSacramentRotation();
   const updateMutation = useUpdateSacramentRotation();

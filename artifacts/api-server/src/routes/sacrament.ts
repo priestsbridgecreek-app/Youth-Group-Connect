@@ -62,7 +62,7 @@ router.get("/sacrament-rotations", requireAuth, async (req, res): Promise<void> 
 router.get("/sacrament-rotations/randomize", requireAuth, async (req, res): Promise<void> => {
   const currentUser = (req as any).currentUser;
 
-  // Get active members of current group
+  // Get active non-leader members of current group
   const activeMembers = await db
     .select({
       id: usersTable.id,
@@ -70,7 +70,11 @@ router.get("/sacrament-rotations/randomize", requireAuth, async (req, res): Prom
       lastName: usersTable.lastName,
     })
     .from(usersTable)
-    .where(and(eq(usersTable.groupId, currentUser.groupId), eq(usersTable.status, "active")));
+    .where(and(
+      eq(usersTable.groupId, currentUser.groupId),
+      eq(usersTable.status, "active"),
+      ne(usersTable.role, "leader"),
+    ));
 
   if (activeMembers.length === 0) {
     res.json({ members: [] });

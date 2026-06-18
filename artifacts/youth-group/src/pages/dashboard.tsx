@@ -3,7 +3,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { format } from "date-fns";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/lib/auth";
-import { CalendarDays, BookOpen, Coffee, MessageSquareQuote } from "lucide-react";
+import { CalendarDays, BookOpen, MessageSquareQuote } from "lucide-react";
+import { SacramentTrayIcon } from "@/components/icons/sacrament-tray";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export default function Dashboard() {
@@ -64,7 +65,7 @@ export default function Dashboard() {
         <Card className="bg-blue-50 border-blue-100 dark:bg-blue-950/20 dark:border-blue-900/30">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium">Sacrament</CardTitle>
-            <Coffee className="h-4 w-4 text-blue-500" />
+            <SacramentTrayIcon className="h-4 w-4 text-blue-500" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{myAssignments.rotations.length}</div>

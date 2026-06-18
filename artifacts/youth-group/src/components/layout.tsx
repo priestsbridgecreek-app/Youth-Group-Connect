@@ -23,8 +23,8 @@ import {
   MessageSquareQuote,
   Settings,
   LogOut,
-  Coffee
 } from "lucide-react";
+import { SacramentTrayIcon } from "@/components/icons/sacrament-tray";
 import { Button } from "@/components/ui/button";
 
 export function Layout({ children }: { children: React.ReactNode }) {
@@ -41,7 +41,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
     { label: "Dashboard", href: "/dashboard", icon: Home },
     { label: "Schedule", href: "/schedule", icon: CalendarDays },
     { label: "Lessons", href: "/lessons", icon: BookOpen },
-    { label: "Sacrament", href: "/sacrament", icon: Coffee },
+    { label: "Sacrament", href: "/sacrament", icon: SacramentTrayIcon },
     { label: "Activities Library", href: "/activities", icon: Library },
     { label: "Members", href: "/members", icon: Users },
     { label: "Requests", href: "/requests", icon: MessageSquareQuote },

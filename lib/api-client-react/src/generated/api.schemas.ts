@@ -138,6 +138,8 @@ export interface Activity {
   equipmentNeeded?: string | null;
   /** @nullable */
   suggestedLocation?: string | null;
+  /** @nullable */
+  costEstimate?: string | null;
   activityType: string;
   groupId: number;
   createdById: number;
@@ -156,6 +158,8 @@ export interface ActivityInput {
   equipmentNeeded?: string | null;
   /** @nullable */
   suggestedLocation?: string | null;
+  /** @nullable */
+  costEstimate?: string | null;
   activityType: string;
 }
 
@@ -166,6 +170,8 @@ export interface ActivityUpdate {
   equipmentNeeded?: string | null;
   /** @nullable */
   suggestedLocation?: string | null;
+  /** @nullable */
+  costEstimate?: string | null;
   activityType?: string;
 }
 

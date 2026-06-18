@@ -161,6 +161,7 @@ export const ListActivitiesResponseItem = zod.object({
   "description": zod.string(),
   "equipmentNeeded": zod.string().nullish(),
   "suggestedLocation": zod.string().nullish(),
+  "costEstimate": zod.string().nullish(),
   "activityType": zod.string(),
   "groupId": zod.number(),
   "createdById": zod.number(),
@@ -181,6 +182,7 @@ export const CreateActivityBody = zod.object({
   "description": zod.string(),
   "equipmentNeeded": zod.string().nullish(),
   "suggestedLocation": zod.string().nullish(),
+  "costEstimate": zod.string().nullish(),
   "activityType": zod.string()
 })
 
@@ -198,6 +200,7 @@ export const GetActivityResponse = zod.object({
   "description": zod.string(),
   "equipmentNeeded": zod.string().nullish(),
   "suggestedLocation": zod.string().nullish(),
+  "costEstimate": zod.string().nullish(),
   "activityType": zod.string(),
   "groupId": zod.number(),
   "createdById": zod.number(),
@@ -221,6 +224,7 @@ export const UpdateActivityBody = zod.object({
   "description": zod.string().optional(),
   "equipmentNeeded": zod.string().nullish(),
   "suggestedLocation": zod.string().nullish(),
+  "costEstimate": zod.string().nullish(),
   "activityType": zod.string().optional()
 })
 
@@ -230,6 +234,7 @@ export const UpdateActivityResponse = zod.object({
   "description": zod.string(),
   "equipmentNeeded": zod.string().nullish(),
   "suggestedLocation": zod.string().nullish(),
+  "costEstimate": zod.string().nullish(),
   "activityType": zod.string(),
   "groupId": zod.number(),
   "createdById": zod.number(),
@@ -266,6 +271,7 @@ export const VoteActivityResponse = zod.object({
   "description": zod.string(),
   "equipmentNeeded": zod.string().nullish(),
   "suggestedLocation": zod.string().nullish(),
+  "costEstimate": zod.string().nullish(),
   "activityType": zod.string(),
   "groupId": zod.number(),
   "createdById": zod.number(),

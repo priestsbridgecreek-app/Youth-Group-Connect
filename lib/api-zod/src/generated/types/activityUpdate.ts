@@ -13,5 +13,7 @@ export interface ActivityUpdate {
   equipmentNeeded?: string | null;
   /** @nullable */
   suggestedLocation?: string | null;
+  /** @nullable */
+  costEstimate?: string | null;
   activityType?: string;
 }

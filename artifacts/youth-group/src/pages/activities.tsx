@@ -1,9 +1,9 @@
 import { useState } from "react";
 import { useAuth } from "@/lib/auth";
-import { 
+import {
   useListActivities, getListActivitiesQueryKey,
   useVoteActivity,
-  useCreateActivity
+  useCreateActivity,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
@@ -16,7 +16,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { ChevronUp, ChevronDown, Plus, Library } from "lucide-react";
+import { ChevronUp, ChevronDown, Plus, Library, DollarSign } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
@@ -27,6 +27,7 @@ const activitySchema = z.object({
   activityType: z.string().min(1, "Type is required"),
   equipmentNeeded: z.string().optional(),
   suggestedLocation: z.string().optional(),
+  costEstimate: z.string().optional(),
 });
 
 export default function Activities() {
@@ -52,6 +53,7 @@ export default function Activities() {
       activityType: "Spiritual",
       equipmentNeeded: "",
       suggestedLocation: "",
+      costEstimate: "",
     },
   });
 
@@ -59,7 +61,7 @@ export default function Activities() {
     try {
       await voteMutation.mutateAsync({ activityId, data: { vote: voteType } });
       queryClient.invalidateQueries({ queryKey: getListActivitiesQueryKey() });
-    } catch (e) {
+    } catch {
       toast({ title: "Failed to save vote", variant: "destructive" });
     }
   };
@@ -71,7 +73,7 @@ export default function Activities() {
       setIsCreateOpen(false);
       form.reset();
       toast({ title: "Activity created" });
-    } catch (e) {
+    } catch {
       toast({ title: "Failed to create activity", variant: "destructive" });
     }
   };
@@ -91,7 +93,7 @@ export default function Activities() {
 
         <div className="flex items-center gap-4">
           <Select value={filterType} onValueChange={setFilterType}>
-            <SelectTrigger className="w-[180px]">
+            <SelectTrigger className="w-[180px]" data-testid="select-filter-type">
               <SelectValue placeholder="Filter by type" />
             </SelectTrigger>
             <SelectContent>
@@ -102,12 +104,12 @@ export default function Activities() {
 
           <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
             <DialogTrigger asChild>
-              <Button className="bg-primary hover:bg-primary/90 text-primary-foreground">
+              <Button data-testid="button-suggest-idea">
                 <Plus className="w-4 h-4 mr-2" />
                 Suggest Idea
               </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[500px]">
+            <DialogContent className="sm:max-w-[520px]">
               <DialogHeader>
                 <DialogTitle>Suggest a New Activity</DialogTitle>
                 <DialogDescription>
@@ -117,13 +119,22 @@ export default function Activities() {
               <Form {...form}>
                 <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                   <FormField control={form.control} name="title" render={({ field }) => (
-                    <FormItem><FormLabel>Title</FormLabel><FormControl><Input placeholder="E.g. Scripture Chase" {...field} /></FormControl><FormMessage /></FormItem>
+                    <FormItem>
+                      <FormLabel>Title</FormLabel>
+                      <FormControl><Input placeholder="E.g. Scripture Chase" data-testid="input-title" {...field} /></FormControl>
+                      <FormMessage />
+                    </FormItem>
                   )} />
+
                   <FormField control={form.control} name="activityType" render={({ field }) => (
                     <FormItem>
                       <FormLabel>Type</FormLabel>
                       <Select onValueChange={field.onChange} defaultValue={field.value}>
-                        <FormControl><SelectTrigger><SelectValue placeholder="Select type" /></SelectTrigger></FormControl>
+                        <FormControl>
+                          <SelectTrigger data-testid="select-activity-type">
+                            <SelectValue placeholder="Select type" />
+                          </SelectTrigger>
+                        </FormControl>
                         <SelectContent>
                           {activityTypes.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
                         </SelectContent>
@@ -131,20 +142,51 @@ export default function Activities() {
                       <FormMessage />
                     </FormItem>
                   )} />
+
                   <FormField control={form.control} name="description" render={({ field }) => (
-                    <FormItem><FormLabel>Description</FormLabel><FormControl><Textarea placeholder="How does it work?" className="min-h-[100px]" {...field} /></FormControl><FormMessage /></FormItem>
+                    <FormItem>
+                      <FormLabel>Description</FormLabel>
+                      <FormControl>
+                        <Textarea placeholder="How does it work?" className="min-h-[90px]" data-testid="input-description" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
                   )} />
+
                   <div className="grid grid-cols-2 gap-4">
                     <FormField control={form.control} name="suggestedLocation" render={({ field }) => (
-                      <FormItem><FormLabel>Suggested Location</FormLabel><FormControl><Input placeholder="Optional" {...field} /></FormControl><FormMessage /></FormItem>
+                      <FormItem>
+                        <FormLabel>Suggested Location</FormLabel>
+                        <FormControl><Input placeholder="Optional" data-testid="input-location" {...field} /></FormControl>
+                        <FormMessage />
+                      </FormItem>
                     )} />
                     <FormField control={form.control} name="equipmentNeeded" render={({ field }) => (
-                      <FormItem><FormLabel>Equipment Needed</FormLabel><FormControl><Input placeholder="Optional" {...field} /></FormControl><FormMessage /></FormItem>
+                      <FormItem>
+                        <FormLabel>Equipment Needed</FormLabel>
+                        <FormControl><Input placeholder="Optional" data-testid="input-equipment" {...field} /></FormControl>
+                        <FormMessage />
+                      </FormItem>
                     )} />
                   </div>
-                  <DialogFooter className="pt-4">
+
+                  <FormField control={form.control} name="costEstimate" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Cost Estimate</FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder="E.g. $5–$10 per person, Free, ~$50 total"
+                          data-testid="input-cost-estimate"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )} />
+
+                  <DialogFooter className="pt-2">
                     <Button type="button" variant="outline" onClick={() => setIsCreateOpen(false)}>Cancel</Button>
-                    <Button type="submit" disabled={createMutation.isPending}>
+                    <Button type="submit" disabled={createMutation.isPending} data-testid="button-submit-idea">
                       {createMutation.isPending ? "Saving..." : "Submit Idea"}
                     </Button>
                   </DialogFooter>
@@ -169,38 +211,50 @@ export default function Activities() {
       ) : (
         <div className="grid gap-6 md:grid-cols-2">
           {activities?.map(activity => (
-            <Card key={activity.id} className="flex flex-col h-full hover-elevate border-border">
+            <Card key={activity.id} data-testid={`card-activity-${activity.id}`} className="flex flex-col h-full hover-elevate border-border">
               <CardHeader className="flex flex-row items-start justify-between pb-2 gap-4">
-                <div>
+                <div className="flex-1 min-w-0">
                   <Badge variant="outline" className="mb-2">{activity.activityType}</Badge>
                   <CardTitle className="text-xl leading-tight">{activity.title}</CardTitle>
                   <CardDescription className="mt-1 line-clamp-2">{activity.description}</CardDescription>
                 </div>
-                <div className="flex flex-col items-center bg-muted/30 rounded-lg p-1 min-w-[3rem]">
-                  <Button 
-                    variant="ghost" 
-                    size="icon" 
+                <div className="flex flex-col items-center bg-muted/30 rounded-lg p-1 min-w-[3rem] shrink-0">
+                  <Button
+                    variant="ghost"
+                    size="icon"
                     className={`h-8 w-8 ${activity.userVote === "up" ? "text-primary bg-primary/10" : "text-muted-foreground"}`}
                     onClick={() => handleVote(activity.id, activity.userVote === "up" ? "none" : "up")}
+                    data-testid={`button-upvote-${activity.id}`}
                   >
                     <ChevronUp className="w-5 h-5" />
                   </Button>
                   <span className="font-bold text-lg my-1">{activity.upvotes - activity.downvotes}</span>
-                  <Button 
-                    variant="ghost" 
-                    size="icon" 
+                  <Button
+                    variant="ghost"
+                    size="icon"
                     className={`h-8 w-8 ${activity.userVote === "down" ? "text-destructive bg-destructive/10" : "text-muted-foreground"}`}
                     onClick={() => handleVote(activity.id, activity.userVote === "down" ? "none" : "down")}
+                    data-testid={`button-downvote-${activity.id}`}
                   >
                     <ChevronDown className="w-5 h-5" />
                   </Button>
                 </div>
               </CardHeader>
               <CardContent className="flex-1">
-                {(activity.equipmentNeeded || activity.suggestedLocation) && (
-                  <div className="text-sm text-muted-foreground space-y-1 mt-4 bg-muted/10 p-3 rounded-md border border-border/50">
-                    {activity.suggestedLocation && <p><span className="font-medium text-foreground">Location:</span> {activity.suggestedLocation}</p>}
-                    {activity.equipmentNeeded && <p><span className="font-medium text-foreground">Needs:</span> {activity.equipmentNeeded}</p>}
+                {(activity.equipmentNeeded || activity.suggestedLocation || activity.costEstimate) && (
+                  <div className="text-sm text-muted-foreground space-y-1.5 mt-2 bg-muted/10 p-3 rounded-md border border-border/50">
+                    {activity.suggestedLocation && (
+                      <p><span className="font-medium text-foreground">Location:</span> {activity.suggestedLocation}</p>
+                    )}
+                    {activity.equipmentNeeded && (
+                      <p><span className="font-medium text-foreground">Equipment:</span> {activity.equipmentNeeded}</p>
+                    )}
+                    {activity.costEstimate && (
+                      <p className="flex items-center gap-1">
+                        <DollarSign className="w-3.5 h-3.5 text-foreground" />
+                        <span className="font-medium text-foreground">Cost:</span> {activity.costEstimate}
+                      </p>
+                    )}
                   </div>
                 )}
               </CardContent>

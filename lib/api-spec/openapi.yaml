@@ -758,6 +758,8 @@ components:
           type: ["string", "null"]
         suggestedLocation:
           type: ["string", "null"]
+        costEstimate:
+          type: ["string", "null"]
         activityType:
           type: string
         groupId:
@@ -788,6 +790,8 @@ components:
           type: ["string", "null"]
         suggestedLocation:
           type: ["string", "null"]
+        costEstimate:
+          type: ["string", "null"]
         activityType:
           type: string
 
@@ -801,6 +805,8 @@ components:
         equipmentNeeded:
           type: ["string", "null"]
         suggestedLocation:
+          type: ["string", "null"]
+        costEstimate:
           type: ["string", "null"]
         activityType:
           type: string

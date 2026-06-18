@@ -17,6 +17,7 @@ export interface Activity {
   suggestedLocation?: string | null;
   /** @nullable */
   costEstimate?: string | null;
+  archived?: boolean;
   activityType: string;
   groupId: number;
   createdById: number;

@@ -6,7 +6,13 @@ import { requireAuth } from "../middlewares/auth";
 
 const router = Router();
 
-async function getActivitiesWithVotes(groupId: number, currentUserId: number, type?: string) {
+async function getActivitiesWithVotes(groupId: number, currentUserId: number, type?: string, archived?: boolean) {
+  const conditions = [
+    eq(activitiesTable.groupId, groupId),
+    eq(activitiesTable.archived, archived ?? false),
+    ...(type ? [eq(activitiesTable.activityType, type)] : []),
+  ];
+
   const baseActivities = await db
     .select({
       id: activitiesTable.id,
@@ -15,6 +21,7 @@ async function getActivitiesWithVotes(groupId: number, currentUserId: number, ty
       equipmentNeeded: activitiesTable.equipmentNeeded,
       suggestedLocation: activitiesTable.suggestedLocation,
       costEstimate: activitiesTable.costEstimate,
+      archived: activitiesTable.archived,
       activityType: activitiesTable.activityType,
       groupId: activitiesTable.groupId,
       createdById: activitiesTable.createdById,
@@ -24,13 +31,8 @@ async function getActivitiesWithVotes(groupId: number, currentUserId: number, ty
     })
     .from(activitiesTable)
     .leftJoin(usersTable, eq(activitiesTable.createdById, usersTable.id))
-    .where(
-      type
-        ? and(eq(activitiesTable.groupId, groupId), eq(activitiesTable.activityType, type))
-        : eq(activitiesTable.groupId, groupId)
-    );
+    .where(and(...conditions));
 
-  // Get vote counts and user vote for each activity
   const activityIds = baseActivities.map((a) => a.id);
   if (activityIds.length === 0) return [];
 
@@ -51,6 +53,7 @@ async function getActivitiesWithVotes(groupId: number, currentUserId: number, ty
       equipmentNeeded: activity.equipmentNeeded,
       suggestedLocation: activity.suggestedLocation,
       costEstimate: activity.costEstimate,
+      archived: activity.archived,
       activityType: activity.activityType,
       groupId: activity.groupId,
       createdById: activity.createdById,
@@ -67,7 +70,8 @@ router.get("/activities", requireAuth, async (req, res): Promise<void> => {
   const currentUser = (req as any).currentUser;
   const qp = ListActivitiesQueryParams.safeParse(req.query);
   const type = qp.success ? qp.data.type : undefined;
-  const activities = await getActivitiesWithVotes(currentUser.groupId, currentUser.id, type);
+  const archived = qp.success ? qp.data.archived : undefined;
+  const activities = await getActivitiesWithVotes(currentUser.groupId, currentUser.id, type, archived);
   res.json(activities);
 });
 
@@ -106,6 +110,11 @@ router.get("/activities/:activityId", requireAuth, async (req, res): Promise<voi
 
 router.patch("/activities/:activityId", requireAuth, async (req, res): Promise<void> => {
   const currentUser = (req as any).currentUser;
+  if (currentUser.role === "member") {
+    res.status(403).json({ error: "Forbidden" });
+    return;
+  }
+
   const raw = Array.isArray(req.params.activityId) ? req.params.activityId[0] : req.params.activityId;
   const activityId = parseInt(raw, 10);
 
@@ -119,20 +128,22 @@ router.patch("/activities/:activityId", requireAuth, async (req, res): Promise<v
     .set(parsed.data)
     .where(and(eq(activitiesTable.id, activityId), eq(activitiesTable.groupId, currentUser.groupId)));
 
-  const all = await getActivitiesWithVotes(currentUser.groupId, currentUser.id);
+  // Return from the correct archived bucket
+  const isArchived = parsed.data.archived ?? false;
+  const all = await getActivitiesWithVotes(currentUser.groupId, currentUser.id, undefined, isArchived);
   const activity = all.find((a) => a.id === activityId);
   res.json(activity);
 });
 
 router.delete("/activities/:activityId", requireAuth, async (req, res): Promise<void> => {
   const currentUser = (req as any).currentUser;
-  const raw = Array.isArray(req.params.activityId) ? req.params.activityId[0] : req.params.activityId;
-  const activityId = parseInt(raw, 10);
-
   if (currentUser.role === "member") {
     res.status(403).json({ error: "Forbidden" });
     return;
   }
+
+  const raw = Array.isArray(req.params.activityId) ? req.params.activityId[0] : req.params.activityId;
+  const activityId = parseInt(raw, 10);
 
   await db.delete(activityVotesTable).where(eq(activityVotesTable.activityId, activityId));
   await db.delete(activitiesTable).where(
@@ -169,11 +180,7 @@ router.post("/activities/:activityId/vote", requireAuth, async (req, res): Promi
         .set({ vote })
         .where(and(eq(activityVotesTable.activityId, activityId), eq(activityVotesTable.userId, currentUser.id)));
     } else {
-      await db.insert(activityVotesTable).values({
-        activityId,
-        userId: currentUser.id,
-        vote,
-      });
+      await db.insert(activityVotesTable).values({ activityId, userId: currentUser.id, vote });
     }
   }
 

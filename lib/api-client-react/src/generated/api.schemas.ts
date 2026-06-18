@@ -140,6 +140,7 @@ export interface Activity {
   suggestedLocation?: string | null;
   /** @nullable */
   costEstimate?: string | null;
+  archived?: boolean;
   activityType: string;
   groupId: number;
   createdById: number;
@@ -172,6 +173,7 @@ export interface ActivityUpdate {
   suggestedLocation?: string | null;
   /** @nullable */
   costEstimate?: string | null;
+  archived?: boolean;
   activityType?: string;
 }
 
@@ -383,6 +385,7 @@ export interface DashboardSummary {
 
 export type ListActivitiesParams = {
 type?: string;
+archived?: boolean;
 };
 
 export type ListScheduledActivitiesParams = {

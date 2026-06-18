@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, timestamp, boolean } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 import { usersTable, groupsTable } from "./users";
@@ -10,6 +10,7 @@ export const activitiesTable = pgTable("activities", {
   equipmentNeeded: text("equipment_needed"),
   suggestedLocation: text("suggested_location"),
   costEstimate: text("cost_estimate"),
+  archived: boolean("archived").notNull().default(false),
   activityType: text("activity_type").notNull().default("general"),
   groupId: integer("group_id").notNull().references(() => groupsTable.id),
   createdById: integer("created_by_id").notNull().references(() => usersTable.id),

@@ -152,7 +152,8 @@ export const ResetAccessCodeResponse = zod.object({
  * @summary List activities for current group
  */
 export const ListActivitiesQueryParams = zod.object({
-  "type": zod.coerce.string().optional()
+  "type": zod.coerce.string().optional(),
+  "archived": zod.coerce.boolean().optional()
 })
 
 export const ListActivitiesResponseItem = zod.object({
@@ -162,6 +163,7 @@ export const ListActivitiesResponseItem = zod.object({
   "equipmentNeeded": zod.string().nullish(),
   "suggestedLocation": zod.string().nullish(),
   "costEstimate": zod.string().nullish(),
+  "archived": zod.boolean().optional(),
   "activityType": zod.string(),
   "groupId": zod.number(),
   "createdById": zod.number(),
@@ -201,6 +203,7 @@ export const GetActivityResponse = zod.object({
   "equipmentNeeded": zod.string().nullish(),
   "suggestedLocation": zod.string().nullish(),
   "costEstimate": zod.string().nullish(),
+  "archived": zod.boolean().optional(),
   "activityType": zod.string(),
   "groupId": zod.number(),
   "createdById": zod.number(),
@@ -225,6 +228,7 @@ export const UpdateActivityBody = zod.object({
   "equipmentNeeded": zod.string().nullish(),
   "suggestedLocation": zod.string().nullish(),
   "costEstimate": zod.string().nullish(),
+  "archived": zod.boolean().optional(),
   "activityType": zod.string().optional()
 })
 
@@ -235,6 +239,7 @@ export const UpdateActivityResponse = zod.object({
   "equipmentNeeded": zod.string().nullish(),
   "suggestedLocation": zod.string().nullish(),
   "costEstimate": zod.string().nullish(),
+  "archived": zod.boolean().optional(),
   "activityType": zod.string(),
   "groupId": zod.number(),
   "createdById": zod.number(),
@@ -272,6 +277,7 @@ export const VoteActivityResponse = zod.object({
   "equipmentNeeded": zod.string().nullish(),
   "suggestedLocation": zod.string().nullish(),
   "costEstimate": zod.string().nullish(),
+  "archived": zod.boolean().optional(),
   "activityType": zod.string(),
   "groupId": zod.number(),
   "createdById": zod.number(),

@@ -15,5 +15,6 @@ export interface ActivityUpdate {
   suggestedLocation?: string | null;
   /** @nullable */
   costEstimate?: string | null;
+  archived?: boolean;
   activityType?: string;
 }

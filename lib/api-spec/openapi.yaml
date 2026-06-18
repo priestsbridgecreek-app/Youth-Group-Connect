@@ -202,6 +202,10 @@ paths:
           in: query
           schema:
             type: string
+        - name: archived
+          in: query
+          schema:
+            type: boolean
       responses:
         "200":
           description: Activities
@@ -760,6 +764,8 @@ components:
           type: ["string", "null"]
         costEstimate:
           type: ["string", "null"]
+        archived:
+          type: boolean
         activityType:
           type: string
         groupId:
@@ -808,6 +814,8 @@ components:
           type: ["string", "null"]
         costEstimate:
           type: ["string", "null"]
+        archived:
+          type: boolean
         activityType:
           type: string
 

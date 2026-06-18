@@ -35,6 +35,66 @@ type ActivityFormValues = z.infer<typeof activitySchema>;
 
 const activityTypes = ["Spiritual", "Social", "Physical", "Service", "Intellectual", "Other"];
 
+function ActivityFormFields({ form }: { form: ReturnType<typeof useForm<ActivityFormValues>> }) {
+  return (
+    <>
+      <FormField control={form.control} name="title" render={({ field }) => (
+        <FormItem>
+          <FormLabel>Title</FormLabel>
+          <FormControl><Input placeholder="E.g. Scripture Chase" data-testid="input-title" {...field} /></FormControl>
+          <FormMessage />
+        </FormItem>
+      )} />
+      <FormField control={form.control} name="activityType" render={({ field }) => (
+        <FormItem>
+          <FormLabel>Type</FormLabel>
+          <Select onValueChange={field.onChange} value={field.value}>
+            <FormControl>
+              <SelectTrigger data-testid="select-activity-type"><SelectValue placeholder="Select type" /></SelectTrigger>
+            </FormControl>
+            <SelectContent>
+              {activityTypes.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+            </SelectContent>
+          </Select>
+          <FormMessage />
+        </FormItem>
+      )} />
+      <FormField control={form.control} name="description" render={({ field }) => (
+        <FormItem>
+          <FormLabel>Description</FormLabel>
+          <FormControl><Textarea placeholder="How does it work?" className="min-h-[90px]" data-testid="input-description" {...field} /></FormControl>
+          <FormMessage />
+        </FormItem>
+      )} />
+      <div className="grid grid-cols-2 gap-4">
+        <FormField control={form.control} name="suggestedLocation" render={({ field }) => (
+          <FormItem>
+            <FormLabel>Suggested Location</FormLabel>
+            <FormControl><Input placeholder="Optional" data-testid="input-location" {...field} /></FormControl>
+            <FormMessage />
+          </FormItem>
+        )} />
+        <FormField control={form.control} name="equipmentNeeded" render={({ field }) => (
+          <FormItem>
+            <FormLabel>Equipment Needed</FormLabel>
+            <FormControl><Input placeholder="Optional" data-testid="input-equipment" {...field} /></FormControl>
+            <FormMessage />
+          </FormItem>
+        )} />
+      </div>
+      <FormField control={form.control} name="costEstimate" render={({ field }) => (
+        <FormItem>
+          <FormLabel>Cost Estimate</FormLabel>
+          <FormControl>
+            <Input placeholder="E.g. $5–$10 per person, Free, ~$50 total" data-testid="input-cost-estimate" {...field} />
+          </FormControl>
+          <FormMessage />
+        </FormItem>
+      )} />
+    </>
+  );
+}
+
 export default function Activities() {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -131,64 +191,6 @@ export default function Activities() {
       toast({ title: "Failed to update activity", variant: "destructive" });
     }
   };
-
-  const ActivityFormFields = ({ form }: { form: ReturnType<typeof useForm<ActivityFormValues>> }) => (
-    <>
-      <FormField control={form.control} name="title" render={({ field }) => (
-        <FormItem>
-          <FormLabel>Title</FormLabel>
-          <FormControl><Input placeholder="E.g. Scripture Chase" data-testid="input-title" {...field} /></FormControl>
-          <FormMessage />
-        </FormItem>
-      )} />
-      <FormField control={form.control} name="activityType" render={({ field }) => (
-        <FormItem>
-          <FormLabel>Type</FormLabel>
-          <Select onValueChange={field.onChange} value={field.value}>
-            <FormControl>
-              <SelectTrigger data-testid="select-activity-type"><SelectValue placeholder="Select type" /></SelectTrigger>
-            </FormControl>
-            <SelectContent>
-              {activityTypes.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
-            </SelectContent>
-          </Select>
-          <FormMessage />
-        </FormItem>
-      )} />
-      <FormField control={form.control} name="description" render={({ field }) => (
-        <FormItem>
-          <FormLabel>Description</FormLabel>
-          <FormControl><Textarea placeholder="How does it work?" className="min-h-[90px]" data-testid="input-description" {...field} /></FormControl>
-          <FormMessage />
-        </FormItem>
-      )} />
-      <div className="grid grid-cols-2 gap-4">
-        <FormField control={form.control} name="suggestedLocation" render={({ field }) => (
-          <FormItem>
-            <FormLabel>Suggested Location</FormLabel>
-            <FormControl><Input placeholder="Optional" data-testid="input-location" {...field} /></FormControl>
-            <FormMessage />
-          </FormItem>
-        )} />
-        <FormField control={form.control} name="equipmentNeeded" render={({ field }) => (
-          <FormItem>
-            <FormLabel>Equipment Needed</FormLabel>
-            <FormControl><Input placeholder="Optional" data-testid="input-equipment" {...field} /></FormControl>
-            <FormMessage />
-          </FormItem>
-        )} />
-      </div>
-      <FormField control={form.control} name="costEstimate" render={({ field }) => (
-        <FormItem>
-          <FormLabel>Cost Estimate</FormLabel>
-          <FormControl>
-            <Input placeholder="E.g. $5–$10 per person, Free, ~$50 total" data-testid="input-cost-estimate" {...field} />
-          </FormControl>
-          <FormMessage />
-        </FormItem>
-      )} />
-    </>
-  );
 
   return (
     <div className="p-8 max-w-6xl mx-auto space-y-8">

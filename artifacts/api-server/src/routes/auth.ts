@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { db, usersTable, groupsTable } from "@workspace/db";
 import { LoginBody } from "@workspace/api-zod";
 
@@ -31,10 +31,12 @@ router.post("/auth/login", async (req, res): Promise<void> => {
   }
 
   const { accessCode } = parsed.data;
+  // Normalize: strip dashes so "JP100001" and "JP-100001" both work
+  const normalized = accessCode.trim().toUpperCase().replace(/-/g, "");
   const rows = await db
     .select()
     .from(usersTable)
-    .where(eq(usersTable.accessCode, accessCode.trim().toUpperCase()));
+    .where(sql`REPLACE(${usersTable.accessCode}, '-', '') = ${normalized}`);
 
   const user = rows[0];
   if (!user || user.status === "archived") {

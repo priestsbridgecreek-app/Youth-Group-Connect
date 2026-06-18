@@ -62,7 +62,7 @@ export default function Login() {
                     <FormLabel>Access Code</FormLabel>
                     <FormControl>
                       <Input 
-                        placeholder="e.g. JP-493827" 
+                        placeholder="e.g. JP493827" 
                         {...field} 
                         className="text-center text-lg tracking-widest uppercase font-mono"
                         autoComplete="off"

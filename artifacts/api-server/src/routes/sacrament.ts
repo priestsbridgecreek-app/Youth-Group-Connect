@@ -77,13 +77,13 @@ router.get("/sacrament-rotations/randomize", requireAuth, async (req, res): Prom
     return;
   }
 
-  // Get recent rotation members to avoid repeating (last 3 rotations)
+  // Get recent rotation members to avoid repeating (last 4 rotations)
   const recentRotations = await db
     .select()
     .from(sacramentRotationsTable)
     .where(eq(sacramentRotationsTable.groupId, currentUser.groupId))
-    .orderBy(sql`${sacramentRotationsTable.createdAt} DESC`)
-    .limit(3);
+    .orderBy(sql`${sacramentRotationsTable.date} DESC`)
+    .limit(4);
 
   const recentMemberIds = new Set<number>();
   if (recentRotations.length > 0) {

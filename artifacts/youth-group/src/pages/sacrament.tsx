@@ -365,7 +365,7 @@ export default function Sacrament() {
           <p className="text-muted-foreground">The upcoming sacrament schedule is empty.</p>
         </div>
       ) : (
-        <div className="grid md:grid-cols-2 gap-6">
+        <div className="flex flex-col gap-4">
           {rotations?.map((rotation) => {
             const isAssigned = rotation.members.some((m) => m.userId === user?.id);
             return (

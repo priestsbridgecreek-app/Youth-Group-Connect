@@ -1,22 +1,39 @@
 openapi: 3.1.0
 info:
-  # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: Church Youth Group Coordination API
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: auth
+    description: Authentication via access code
+  - name: users
+    description: User management
+  - name: activities
+    description: Activity library
+  - name: votes
+    description: Activity votes
+  - name: scheduled-activities
+    description: Scheduled weekly activities
+  - name: lessons
+    description: Sunday lessons
+  - name: sacrament
+    description: Sacrament blessing rotations
+  - name: substitutions
+    description: Substitution requests
+  - name: dashboard
+    description: Dashboard summaries
+
 paths:
   /healthz:
     get:
       operationId: healthCheck
       tags: [health]
       summary: Health check
-      description: Returns server health status
       responses:
         "200":
           description: Healthy
@@ -24,6 +41,609 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  # AUTH
+  /auth/login:
+    post:
+      operationId: login
+      tags: [auth]
+      summary: Login with access code
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginInput"
+      responses:
+        "200":
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthUser"
+        "401":
+          description: Invalid access code
+
+  /auth/logout:
+    post:
+      operationId: logout
+      tags: [auth]
+      summary: Logout
+      responses:
+        "200":
+          description: Logged out
+
+  /auth/me:
+    get:
+      operationId: getMe
+      tags: [auth]
+      summary: Get current user
+      responses:
+        "200":
+          description: Current user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthUser"
+        "401":
+          description: Not authenticated
+
+  # USERS / MEMBERS
+  /users:
+    get:
+      operationId: listUsers
+      tags: [users]
+      summary: List users in the current user's group
+      responses:
+        "200":
+          description: List of users
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/User"
+
+  /users/invite:
+    post:
+      operationId: inviteUser
+      tags: [users]
+      summary: Invite a new member (Presidency or Leader)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/InviteUserInput"
+      responses:
+        "201":
+          description: Invited user with access code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+
+  /users/{userId}:
+    get:
+      operationId: getUser
+      tags: [users]
+      summary: Get a user
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: User details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+
+    patch:
+      operationId: updateUser
+      tags: [users]
+      summary: Update a user (role, status, group, access code)
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserUpdate"
+      responses:
+        "200":
+          description: Updated user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+
+  /users/{userId}/reset-code:
+    post:
+      operationId: resetAccessCode
+      tags: [users]
+      summary: Reset a user's access code
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ResetCodeInput"
+      responses:
+        "200":
+          description: Updated user with new code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+
+  # ACTIVITIES
+  /activities:
+    get:
+      operationId: listActivities
+      tags: [activities]
+      summary: List activities for current group
+      parameters:
+        - name: type
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Activities
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Activity"
+
+    post:
+      operationId: createActivity
+      tags: [activities]
+      summary: Create an activity
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ActivityInput"
+      responses:
+        "201":
+          description: Created activity
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Activity"
+
+  /activities/{activityId}:
+    get:
+      operationId: getActivity
+      tags: [activities]
+      summary: Get an activity
+      parameters:
+        - name: activityId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Activity
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Activity"
+
+    patch:
+      operationId: updateActivity
+      tags: [activities]
+      summary: Update an activity
+      parameters:
+        - name: activityId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ActivityUpdate"
+      responses:
+        "200":
+          description: Updated activity
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Activity"
+
+    delete:
+      operationId: deleteActivity
+      tags: [activities]
+      summary: Delete an activity
+      parameters:
+        - name: activityId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  /activities/{activityId}/vote:
+    post:
+      operationId: voteActivity
+      tags: [votes]
+      summary: Upvote or downvote an activity
+      parameters:
+        - name: activityId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/VoteInput"
+      responses:
+        "200":
+          description: Vote recorded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Activity"
+
+  # SCHEDULED ACTIVITIES
+  /scheduled-activities:
+    get:
+      operationId: listScheduledActivities
+      tags: [scheduled-activities]
+      summary: List scheduled weekly activities for current group
+      parameters:
+        - name: from
+          in: query
+          schema:
+            type: string
+        - name: to
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Scheduled activities
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ScheduledActivity"
+
+    post:
+      operationId: createScheduledActivity
+      tags: [scheduled-activities]
+      summary: Schedule a weekly activity
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ScheduledActivityInput"
+      responses:
+        "201":
+          description: Scheduled activity
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ScheduledActivity"
+
+  /scheduled-activities/{id}:
+    patch:
+      operationId: updateScheduledActivity
+      tags: [scheduled-activities]
+      summary: Update a scheduled activity
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ScheduledActivityUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ScheduledActivity"
+
+    delete:
+      operationId: deleteScheduledActivity
+      tags: [scheduled-activities]
+      summary: Delete a scheduled activity
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  # SUNDAY LESSONS
+  /lessons:
+    get:
+      operationId: listLessons
+      tags: [lessons]
+      summary: List Sunday lessons for current group
+      parameters:
+        - name: from
+          in: query
+          schema:
+            type: string
+        - name: to
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Lessons
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Lesson"
+
+    post:
+      operationId: createLesson
+      tags: [lessons]
+      summary: Schedule a Sunday lesson
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LessonInput"
+      responses:
+        "201":
+          description: Created lesson
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Lesson"
+
+  /lessons/{id}:
+    patch:
+      operationId: updateLesson
+      tags: [lessons]
+      summary: Update a lesson
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LessonUpdate"
+      responses:
+        "200":
+          description: Updated lesson
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Lesson"
+
+    delete:
+      operationId: deleteLesson
+      tags: [lessons]
+      summary: Delete a lesson
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  # SACRAMENT ROTATIONS
+  /sacrament-rotations:
+    get:
+      operationId: listSacramentRotations
+      tags: [sacrament]
+      summary: List sacrament blessing rotations for current group
+      parameters:
+        - name: from
+          in: query
+          schema:
+            type: string
+        - name: to
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Rotations
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/SacramentRotation"
+
+    post:
+      operationId: createSacramentRotation
+      tags: [sacrament]
+      summary: Create a sacrament rotation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SacramentRotationInput"
+      responses:
+        "201":
+          description: Created rotation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SacramentRotation"
+
+  /sacrament-rotations/randomize:
+    get:
+      operationId: randomizeSacramentRotation
+      tags: [sacrament]
+      summary: Get randomized member suggestions for a rotation
+      responses:
+        "200":
+          description: Suggested members
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RandomizationResult"
+
+  /sacrament-rotations/{id}:
+    patch:
+      operationId: updateSacramentRotation
+      tags: [sacrament]
+      summary: Update a sacrament rotation
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SacramentRotationUpdate"
+      responses:
+        "200":
+          description: Updated rotation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SacramentRotation"
+
+    delete:
+      operationId: deleteSacramentRotation
+      tags: [sacrament]
+      summary: Delete a sacrament rotation
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  # SUBSTITUTION REQUESTS
+  /substitution-requests:
+    get:
+      operationId: listSubstitutionRequests
+      tags: [substitutions]
+      summary: List substitution requests for current group
+      responses:
+        "200":
+          description: Substitution requests
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/SubstitutionRequest"
+
+    post:
+      operationId: createSubstitutionRequest
+      tags: [substitutions]
+      summary: Request a substitution for a sacrament rotation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SubstitutionRequestInput"
+      responses:
+        "201":
+          description: Created request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SubstitutionRequest"
+
+  /substitution-requests/{id}:
+    patch:
+      operationId: updateSubstitutionRequest
+      tags: [substitutions]
+      summary: Approve, deny, or resolve a substitution request
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SubstitutionRequestUpdate"
+      responses:
+        "200":
+          description: Updated request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SubstitutionRequest"
+
+  # DASHBOARD
+  /dashboard:
+    get:
+      operationId: getDashboard
+      tags: [dashboard]
+      summary: Get dashboard summary for current group
+      responses:
+        "200":
+          description: Dashboard data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DashboardSummary"
+
 components:
   schemas:
     HealthStatus:
@@ -34,3 +654,443 @@ components:
       required:
         - status
 
+    # AUTH
+    LoginInput:
+      type: object
+      required: [accessCode]
+      properties:
+        accessCode:
+          type: string
+
+    AuthUser:
+      type: object
+      required: [id, firstName, lastName, role, groupId, groupName, status, accessCode]
+      properties:
+        id:
+          type: integer
+        firstName:
+          type: string
+        lastName:
+          type: string
+        role:
+          type: string
+          enum: [member, presidency, leader]
+        groupId:
+          type: integer
+        groupName:
+          type: string
+        status:
+          type: string
+          enum: [active, inactive, archived]
+        accessCode:
+          type: string
+
+    # USERS
+    User:
+      type: object
+      required: [id, firstName, lastName, role, groupId, groupName, status, accessCode]
+      properties:
+        id:
+          type: integer
+        firstName:
+          type: string
+        lastName:
+          type: string
+        role:
+          type: string
+          enum: [member, presidency, leader]
+        groupId:
+          type: integer
+        groupName:
+          type: string
+        status:
+          type: string
+          enum: [active, inactive, archived]
+        accessCode:
+          type: string
+        createdAt:
+          type: string
+
+    InviteUserInput:
+      type: object
+      required: [firstName, lastName]
+      properties:
+        firstName:
+          type: string
+        lastName:
+          type: string
+        role:
+          type: string
+          enum: [member, presidency, leader]
+        customAccessCode:
+          type: ["string", "null"]
+
+    UserUpdate:
+      type: object
+      properties:
+        role:
+          type: string
+          enum: [member, presidency, leader]
+        status:
+          type: string
+          enum: [active, inactive, archived]
+        groupId:
+          type: ["integer", "null"]
+
+    ResetCodeInput:
+      type: object
+      properties:
+        customCode:
+          type: ["string", "null"]
+
+    # ACTIVITIES
+    Activity:
+      type: object
+      required: [id, title, description, activityType, groupId, createdById, upvotes, downvotes, userVote]
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        description:
+          type: string
+        equipmentNeeded:
+          type: ["string", "null"]
+        suggestedLocation:
+          type: ["string", "null"]
+        activityType:
+          type: string
+        groupId:
+          type: integer
+        createdById:
+          type: integer
+        createdByName:
+          type: string
+        upvotes:
+          type: integer
+        downvotes:
+          type: integer
+        userVote:
+          type: ["string", "null"]
+          enum: ["up", "down", null]
+        createdAt:
+          type: string
+
+    ActivityInput:
+      type: object
+      required: [title, description, activityType]
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+        equipmentNeeded:
+          type: ["string", "null"]
+        suggestedLocation:
+          type: ["string", "null"]
+        activityType:
+          type: string
+
+    ActivityUpdate:
+      type: object
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+        equipmentNeeded:
+          type: ["string", "null"]
+        suggestedLocation:
+          type: ["string", "null"]
+        activityType:
+          type: string
+
+    VoteInput:
+      type: object
+      required: [vote]
+      properties:
+        vote:
+          type: string
+          enum: [up, down, none]
+
+    # SCHEDULED ACTIVITIES
+    ScheduledActivity:
+      type: object
+      required: [id, date, activityId, activityTitle, groupId]
+      properties:
+        id:
+          type: integer
+        date:
+          type: string
+        activityId:
+          type: integer
+        activityTitle:
+          type: string
+        activityType:
+          type: string
+        personInChargeId:
+          type: ["integer", "null"]
+        personInChargeName:
+          type: ["string", "null"]
+        treatsAssigneeId:
+          type: ["integer", "null"]
+        treatsAssigneeName:
+          type: ["string", "null"]
+        location:
+          type: ["string", "null"]
+        equipment:
+          type: ["string", "null"]
+        notes:
+          type: ["string", "null"]
+        groupId:
+          type: integer
+        createdAt:
+          type: string
+
+    ScheduledActivityInput:
+      type: object
+      required: [date, activityId]
+      properties:
+        date:
+          type: string
+        activityId:
+          type: integer
+        personInChargeId:
+          type: ["integer", "null"]
+        treatsAssigneeId:
+          type: ["integer", "null"]
+        location:
+          type: ["string", "null"]
+        equipment:
+          type: ["string", "null"]
+        notes:
+          type: ["string", "null"]
+
+    ScheduledActivityUpdate:
+      type: object
+      properties:
+        date:
+          type: string
+        activityId:
+          type: integer
+        personInChargeId:
+          type: ["integer", "null"]
+        treatsAssigneeId:
+          type: ["integer", "null"]
+        location:
+          type: ["string", "null"]
+        equipment:
+          type: ["string", "null"]
+        notes:
+          type: ["string", "null"]
+
+    # SUNDAY LESSONS
+    Lesson:
+      type: object
+      required: [id, date, title, topic, groupId]
+      properties:
+        id:
+          type: integer
+        date:
+          type: string
+        title:
+          type: string
+        topic:
+          type: string
+        instructorId:
+          type: ["integer", "null"]
+        instructorName:
+          type: ["string", "null"]
+        activityId:
+          type: ["integer", "null"]
+        activityTitle:
+          type: ["string", "null"]
+        location:
+          type: ["string", "null"]
+        notes:
+          type: ["string", "null"]
+        groupId:
+          type: integer
+        createdAt:
+          type: string
+
+    LessonInput:
+      type: object
+      required: [date, title, topic]
+      properties:
+        date:
+          type: string
+        title:
+          type: string
+        topic:
+          type: string
+        instructorId:
+          type: ["integer", "null"]
+        activityId:
+          type: ["integer", "null"]
+        location:
+          type: ["string", "null"]
+        notes:
+          type: ["string", "null"]
+
+    LessonUpdate:
+      type: object
+      properties:
+        date:
+          type: string
+        title:
+          type: string
+        topic:
+          type: string
+        instructorId:
+          type: ["integer", "null"]
+        activityId:
+          type: ["integer", "null"]
+        location:
+          type: ["string", "null"]
+        notes:
+          type: ["string", "null"]
+
+    # SACRAMENT ROTATIONS
+    SacramentRotation:
+      type: object
+      required: [id, date, groupId, members]
+      properties:
+        id:
+          type: integer
+        date:
+          type: string
+        groupId:
+          type: integer
+        members:
+          type: array
+          items:
+            $ref: "#/components/schemas/RotationMember"
+        createdAt:
+          type: string
+
+    RotationMember:
+      type: object
+      required: [userId, firstName, lastName]
+      properties:
+        userId:
+          type: integer
+        firstName:
+          type: string
+        lastName:
+          type: string
+        role:
+          type: ["string", "null"]
+
+    SacramentRotationInput:
+      type: object
+      required: [date, memberIds]
+      properties:
+        date:
+          type: string
+        memberIds:
+          type: array
+          items:
+            type: integer
+          minItems: 1
+          maxItems: 3
+
+    SacramentRotationUpdate:
+      type: object
+      properties:
+        date:
+          type: string
+        memberIds:
+          type: array
+          items:
+            type: integer
+
+    RandomizationResult:
+      type: object
+      required: [members]
+      properties:
+        members:
+          type: array
+          items:
+            $ref: "#/components/schemas/RotationMember"
+
+    # SUBSTITUTION REQUESTS
+    SubstitutionRequest:
+      type: object
+      required: [id, rotationId, requesterId, status, groupId]
+      properties:
+        id:
+          type: integer
+        rotationId:
+          type: integer
+        rotationDate:
+          type: string
+        requesterId:
+          type: integer
+        requesterName:
+          type: string
+        reason:
+          type: ["string", "null"]
+        status:
+          type: string
+          enum: [pending, approved, denied, resolved]
+        groupId:
+          type: integer
+        createdAt:
+          type: string
+
+    SubstitutionRequestInput:
+      type: object
+      required: [rotationId]
+      properties:
+        rotationId:
+          type: integer
+        reason:
+          type: ["string", "null"]
+
+    SubstitutionRequestUpdate:
+      type: object
+      required: [status]
+      properties:
+        status:
+          type: string
+          enum: [approved, denied, resolved]
+
+    # DASHBOARD
+    DashboardSummary:
+      type: object
+      required: [upcomingActivities, upcomingRotations, upcomingLessons, pendingRequests, myAssignments]
+      properties:
+        upcomingActivities:
+          type: array
+          items:
+            $ref: "#/components/schemas/ScheduledActivity"
+        upcomingRotations:
+          type: array
+          items:
+            $ref: "#/components/schemas/SacramentRotation"
+        upcomingLessons:
+          type: array
+          items:
+            $ref: "#/components/schemas/Lesson"
+        pendingRequests:
+          type: integer
+        myAssignments:
+          $ref: "#/components/schemas/MyAssignments"
+
+    MyAssignments:
+      type: object
+      required: [activities, rotations, lessons]
+      properties:
+        activities:
+          type: array
+          items:
+            type: integer
+        rotations:
+          type: array
+          items:
+            type: integer
+        lessons:
+          type: array
+          items:
+            type: integer

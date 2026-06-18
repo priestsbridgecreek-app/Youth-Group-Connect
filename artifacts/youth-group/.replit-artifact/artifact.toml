@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/"
+title = "Youth Group App"
+version = "1.0.0"
+id = "artifacts/youth-group"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 22928
+
+[services.development]
+run = "pnpm --filter @workspace/youth-group run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/youth-group", "run", "build" ]
+publicDir = "artifacts/youth-group/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "22928"
+BASE_PATH = "/"

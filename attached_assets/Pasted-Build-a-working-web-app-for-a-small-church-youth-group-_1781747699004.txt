@@ -1,0 +1,40 @@
+Build a working web app for a small church youth group coordination system. The app has three separate groups: Priest Group, Teacher’s Group, and Deacon’s Group. Each user belongs to one group and should only see data for their assigned group.
+
+The app needs role-based permissions with three roles: Member, Presidency, and Leader.
+
+Members can view the dashboard, view activities, view schedules, view lessons, view sacrament rotations, submit activity ideas, upvote/downvote activity ideas, and request a substitution for sacrament blessing assignments.
+
+Presidency users can do everything Members can do, plus create official activities, schedule weekly activities, schedule Sunday lessons, schedule sacrament blessing rotations, invite members, assign members to activities, and use a randomizer for sacrament blessing rotations.
+
+Leader users can do everything Members and Presidency users can do, plus activate/deactivate members, archive members, change member roles, and reassign members to another group.
+
+The app should include these main sections:
+
+Dashboard
+Activities
+Schedule
+Lessons
+Sacrament Rotation
+Requests
+Members
+Settings
+
+The dashboard should show upcoming weekly activities, upcoming sacrament blessing rotations, and upcoming Sunday lessons for the logged-in user’s group. Anything assigned to the logged-in user should be highlighted.
+
+The Activity Library should allow users to create activity ideas with title, description, equipment needed, suggested location, and activity type. Users can upvote or downvote activities. Activities should belong to only one group.
+
+The Scheduling section should allow Presidency and Leaders to schedule weekly activities by selecting a date, choosing an activity from the Activity Library, assigning a person in charge, assigning treats, assigning equipment, and setting a location. If the desired activity is not in the list, include a plus sign button that opens a quick-create activity form. Once the activity is created, add it to the library and automatically select it in the schedule form.
+
+The Lessons section should allow Sunday lesson activities to be scheduled with a date, lesson title, topic, teacher/instructor, optional activity, location, and notes.
+
+The Sacrament Rotation section should allow Presidency and Leaders to select a date and choose three active users from the current group. Include a randomizer that selects three active users from the group, avoids inactive or archived users, and tries to avoid assigning the same people too often. Members assigned to a rotation should be able to request a substitution or change. Presidency and Leaders should be able to approve, deny, or resolve substitution requests.
+
+The Members section should allow Leaders to invite members, activate/deactivate members, archive members, change roles, reassign groups, and reset access codes. Presidency users should be able to invite members.
+
+Invited users should receive or be shown a custom access code. The code should begin with their initials, followed by a six-digit code, such as JP-493827. The app should generate this code automatically, but Leaders or Presidency users should be able to customize it. Optionally allow users to change their own code after first login.
+
+Use a database with tables or collections for Users, Groups, Activities, ActivityVotes, ScheduledActivities, SundayLessons, SacramentRotations, and SubstitutionRequests.
+
+Every query must filter by the logged-in user’s groupId so users only see their own group’s data. Every action must also check the user’s role before allowing the action.
+
+Build the app with a clean, mobile-friendly design using dashboard cards, simple forms, clear navigation, and highlighted assignment cards for the logged-in user.

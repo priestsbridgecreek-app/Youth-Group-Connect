@@ -109,7 +109,7 @@ export default function Activities() {
 
   const queryParams = {
     ...(filterType !== "all" ? { type: filterType } : {}),
-    archived: showArchived,
+    ...(showArchived ? { archived: true } : {}),
   };
 
   const { data: activities, isLoading } = useListActivities(queryParams, {

@@ -20,7 +20,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Coffee, Plus, Trash2, Shuffle, AlertCircle, Pencil } from "lucide-react";
+import { Plus, Trash2, Shuffle, AlertCircle, Pencil } from "lucide-react";
+import { SacramentTrayIcon } from "@/components/icons/sacrament-tray";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { format, parseISO } from "date-fns";
@@ -199,7 +200,7 @@ export default function Sacrament() {
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-serif font-bold text-primary flex items-center gap-3">
-            <Coffee className="w-8 h-8" />
+            <SacramentTrayIcon className="w-8 h-8" />
             Sacrament Blessing
           </h1>
           <p className="text-muted-foreground mt-1">Manage weekly blessing rotations.</p>
@@ -360,7 +361,7 @@ export default function Sacrament() {
         </div>
       ) : rotations?.length === 0 ? (
         <div className="text-center py-16 bg-card border border-border rounded-xl border-dashed">
-          <Coffee className="w-12 h-12 text-muted-foreground/50 mx-auto mb-4" />
+          <SacramentTrayIcon className="w-12 h-12 text-muted-foreground/50 mx-auto mb-4" />
           <h3 className="text-xl font-medium text-foreground mb-2">No rotations scheduled</h3>
           <p className="text-muted-foreground">The upcoming sacrament schedule is empty.</p>
         </div>

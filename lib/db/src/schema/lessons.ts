@@ -10,6 +10,8 @@ export const lessonsTable = pgTable("lessons", {
   title: text("title").notNull(),
   topic: text("topic").notNull(),
   instructorId: integer("instructor_id").references(() => usersTable.id),
+  assistingId: integer("assisting_id").references(() => usersTable.id),
+  goalSharingId: integer("goal_sharing_id").references(() => usersTable.id),
   activityId: integer("activity_id").references(() => activitiesTable.id),
   location: text("location"),
   notes: text("notes"),

@@ -16,11 +16,17 @@ export interface Lesson {
   /** @nullable */
   instructorName?: string | null;
   /** @nullable */
+  assistingId?: number | null;
+  /** @nullable */
+  assistingName?: string | null;
+  /** @nullable */
+  goalSharingId?: number | null;
+  /** @nullable */
+  goalSharingName?: string | null;
+  /** @nullable */
   activityId?: number | null;
   /** @nullable */
   activityTitle?: string | null;
-  /** @nullable */
-  location?: string | null;
   /** @nullable */
   notes?: string | null;
   groupId: number;

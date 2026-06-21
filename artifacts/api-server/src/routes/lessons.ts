@@ -14,8 +14,9 @@ async function getLessonsWithDetails(groupId: number, from?: string, to?: string
       title: lessonsTable.title,
       topic: lessonsTable.topic,
       instructorId: lessonsTable.instructorId,
+      assistingId: lessonsTable.assistingId,
+      goalSharingId: lessonsTable.goalSharingId,
       activityId: lessonsTable.activityId,
-      location: lessonsTable.location,
       notes: lessonsTable.notes,
       groupId: lessonsTable.groupId,
       createdAt: lessonsTable.createdAt,
@@ -23,16 +24,21 @@ async function getLessonsWithDetails(groupId: number, from?: string, to?: string
     .from(lessonsTable)
     .where(eq(lessonsTable.groupId, groupId));
 
-  const userIds = results.filter((r) => r.instructorId).map((r) => r.instructorId!);
-  const activityIds = results.filter((r) => r.activityId).map((r) => r.activityId!);
+  const allUserIds = new Set<number>();
+  results.forEach((r) => {
+    if (r.instructorId) allUserIds.add(r.instructorId);
+    if (r.assistingId) allUserIds.add(r.assistingId);
+    if (r.goalSharingId) allUserIds.add(r.goalSharingId);
+  });
 
   const userMap: Record<number, string> = {};
-  if (userIds.length > 0) {
+  if (allUserIds.size > 0) {
     const users = await db.select({ id: usersTable.id, firstName: usersTable.firstName, lastName: usersTable.lastName })
       .from(usersTable);
     users.forEach((u) => { userMap[u.id] = `${u.firstName} ${u.lastName}`; });
   }
 
+  const activityIds = results.filter((r) => r.activityId).map((r) => r.activityId!);
   const activityMap: Record<number, string> = {};
   if (activityIds.length > 0) {
     const activities = await db.select({ id: activitiesTable.id, title: activitiesTable.title }).from(activitiesTable);
@@ -46,9 +52,12 @@ async function getLessonsWithDetails(groupId: number, from?: string, to?: string
     topic: r.topic,
     instructorId: r.instructorId,
     instructorName: r.instructorId ? (userMap[r.instructorId] ?? null) : null,
+    assistingId: r.assistingId,
+    assistingName: r.assistingId ? (userMap[r.assistingId] ?? null) : null,
+    goalSharingId: r.goalSharingId,
+    goalSharingName: r.goalSharingId ? (userMap[r.goalSharingId] ?? null) : null,
     activityId: r.activityId,
     activityTitle: r.activityId ? (activityMap[r.activityId] ?? null) : null,
-    location: r.location,
     notes: r.notes,
     groupId: r.groupId,
     createdAt: r.createdAt.toISOString(),
@@ -85,8 +94,9 @@ router.post("/lessons", requireAuth, async (req, res): Promise<void> => {
     ...parsed.data,
     groupId: currentUser.groupId,
     instructorId: parsed.data.instructorId ?? null,
+    assistingId: parsed.data.assistingId ?? null,
+    goalSharingId: parsed.data.goalSharingId ?? null,
     activityId: parsed.data.activityId ?? null,
-    location: parsed.data.location ?? null,
     notes: parsed.data.notes ?? null,
   }).returning();
 

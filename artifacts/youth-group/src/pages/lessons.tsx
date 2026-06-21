@@ -1,14 +1,15 @@
 import { useState } from "react";
 import { useAuth } from "@/lib/auth";
 import { useSearch, Link } from "wouter";
-import { 
+import {
   useListLessons, getListLessonsQueryKey,
   useCreateLesson,
+  useUpdateLesson,
   useDeleteLesson,
   useListUsers, getListUsersQueryKey
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
@@ -25,60 +26,199 @@ import { format } from "date-fns";
 
 const lessonSchema = z.object({
   date: z.string().min(1, "Date is required"),
-  title: z.string().min(1, "Title is required"),
-  topic: z.string().min(1, "Topic is required"),
+  title: z.string().min(1, "Lesson is required"),
+  topic: z.string().default(""),
   instructorId: z.coerce.number().optional().nullable(),
-  location: z.string().optional(),
+  assistingId: z.coerce.number().optional().nullable(),
+  goalSharingId: z.coerce.number().optional().nullable(),
   notes: z.string().optional(),
 });
+
+type LessonForm = z.infer<typeof lessonSchema>;
+
+const NONE = "__none__";
+
+function LessonFormFields({ form, leaders, nonLeaders }: {
+  form: ReturnType<typeof useForm<LessonForm>>;
+  leaders: { id: number; firstName: string; lastName: string }[];
+  nonLeaders: { id: number; firstName: string; lastName: string }[];
+}) {
+  return (
+    <div className="space-y-4">
+      <FormField control={form.control} name="date" render={({ field }) => (
+        <FormItem>
+          <FormLabel>Date</FormLabel>
+          <FormControl><Input type="date" {...field} /></FormControl>
+          <FormMessage />
+        </FormItem>
+      )} />
+      <FormField control={form.control} name="title" render={({ field }) => (
+        <FormItem>
+          <FormLabel>Lesson</FormLabel>
+          <FormControl><Input placeholder="Lesson title" {...field} /></FormControl>
+          <FormMessage />
+        </FormItem>
+      )} />
+      <FormField control={form.control} name="instructorId" render={({ field }) => (
+        <FormItem>
+          <FormLabel>Teacher</FormLabel>
+          <Select
+            onValueChange={(val) => field.onChange(val === NONE ? null : parseInt(val))}
+            value={field.value != null ? field.value.toString() : NONE}
+          >
+            <FormControl><SelectTrigger><SelectValue placeholder="Select teacher" /></SelectTrigger></FormControl>
+            <SelectContent>
+              <SelectItem value={NONE}>None (TBD)</SelectItem>
+              {leaders.map(u => (
+                <SelectItem key={u.id} value={u.id.toString()}>{u.firstName} {u.lastName}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <FormMessage />
+        </FormItem>
+      )} />
+      <FormField control={form.control} name="assistingId" render={({ field }) => (
+        <FormItem>
+          <FormLabel>Assisting</FormLabel>
+          <Select
+            onValueChange={(val) => field.onChange(val === NONE ? null : parseInt(val))}
+            value={field.value != null ? field.value.toString() : NONE}
+          >
+            <FormControl><SelectTrigger><SelectValue placeholder="Select member" /></SelectTrigger></FormControl>
+            <SelectContent>
+              <SelectItem value={NONE}>None</SelectItem>
+              {nonLeaders.map(u => (
+                <SelectItem key={u.id} value={u.id.toString()}>{u.firstName} {u.lastName}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <FormMessage />
+        </FormItem>
+      )} />
+      <FormField control={form.control} name="goalSharingId" render={({ field }) => (
+        <FormItem>
+          <FormLabel>Goal Sharing</FormLabel>
+          <Select
+            onValueChange={(val) => field.onChange(val === NONE ? null : parseInt(val))}
+            value={field.value != null ? field.value.toString() : NONE}
+          >
+            <FormControl><SelectTrigger><SelectValue placeholder="Select member" /></SelectTrigger></FormControl>
+            <SelectContent>
+              <SelectItem value={NONE}>None</SelectItem>
+              {nonLeaders.map(u => (
+                <SelectItem key={u.id} value={u.id.toString()}>{u.firstName} {u.lastName}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <FormMessage />
+        </FormItem>
+      )} />
+      <FormField control={form.control} name="notes" render={({ field }) => (
+        <FormItem>
+          <FormLabel>Notes</FormLabel>
+          <FormControl><Textarea placeholder="Optional" className="min-h-[80px]" {...field} /></FormControl>
+          <FormMessage />
+        </FormItem>
+      )} />
+    </div>
+  );
+}
 
 export default function Lessons() {
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [editingId, setEditingId] = useState<number | null>(null);
 
   const { data: lessons, isLoading } = useListLessons(undefined, {
     query: { queryKey: getListLessonsQueryKey() }
   });
-  
+
   const { data: users } = useListUsers({
     query: { queryKey: getListUsersQueryKey() }
   });
 
+  const leaders = users?.filter(u => u.status === "active" && (u.role === "leader" || u.role === "presidency")) ?? [];
+  const nonLeaders = users?.filter(u => u.status === "active" && u.role !== "leader") ?? [];
+
   const createMutation = useCreateLesson();
+  const updateMutation = useUpdateLesson();
   const deleteMutation = useDeleteLesson();
 
-  const form = useForm<z.infer<typeof lessonSchema>>({
+  const createForm = useForm<LessonForm>({
     resolver: zodResolver(lessonSchema),
     defaultValues: {
-      date: new Date().toISOString().split('T')[0],
+      date: new Date().toISOString().split("T")[0],
       title: "",
       topic: "",
-      location: "",
+      instructorId: null,
+      assistingId: null,
+      goalSharingId: null,
       notes: "",
     },
   });
 
-  const onSubmit = async (values: z.infer<typeof lessonSchema>) => {
+  const editForm = useForm<LessonForm>({
+    resolver: zodResolver(lessonSchema),
+    defaultValues: {
+      date: "",
+      title: "",
+      topic: "",
+      instructorId: null,
+      assistingId: null,
+      goalSharingId: null,
+      notes: "",
+    },
+  });
+
+  const editingLesson = lessons?.find(l => l.id === editingId);
+
+  const openEdit = (lesson: NonNullable<typeof editingLesson>) => {
+    editForm.reset({
+      date: lesson.date,
+      title: lesson.title,
+      topic: lesson.topic ?? "",
+      instructorId: lesson.instructorId ?? null,
+      assistingId: lesson.assistingId ?? null,
+      goalSharingId: lesson.goalSharingId ?? null,
+      notes: lesson.notes ?? "",
+    });
+    setEditingId(lesson.id);
+  };
+
+  const onCreateSubmit = async (values: LessonForm) => {
     try {
-      await createMutation.mutateAsync({ data: values });
+      await createMutation.mutateAsync({ data: { ...values, topic: values.title } });
       queryClient.invalidateQueries({ queryKey: getListLessonsQueryKey() });
       setIsCreateOpen(false);
-      form.reset();
-      toast({ title: "Lesson scheduled successfully" });
-    } catch (e) {
+      createForm.reset();
+      toast({ title: "Lesson scheduled" });
+    } catch {
       toast({ title: "Failed to schedule lesson", variant: "destructive" });
     }
   };
 
+  const onEditSubmit = async (values: LessonForm) => {
+    if (!editingId) return;
+    try {
+      await updateMutation.mutateAsync({ lessonId: editingId, data: { ...values, topic: values.title } });
+      queryClient.invalidateQueries({ queryKey: getListLessonsQueryKey() });
+      setEditingId(null);
+      toast({ title: "Lesson updated" });
+    } catch {
+      toast({ title: "Failed to update lesson", variant: "destructive" });
+    }
+  };
+
   const handleDelete = async (id: number) => {
-    if (!confirm("Are you sure you want to delete this lesson?")) return;
+    if (!confirm("Delete this lesson?")) return;
     try {
       await deleteMutation.mutateAsync({ lessonId: id });
       queryClient.invalidateQueries({ queryKey: getListLessonsQueryKey() });
+      setEditingId(null);
       toast({ title: "Lesson removed" });
-    } catch (e) {
+    } catch {
       toast({ title: "Failed to delete lesson", variant: "destructive" });
     }
   };
@@ -111,44 +251,17 @@ export default function Lessons() {
                 Schedule Lesson
               </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[500px]">
+            <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>Schedule a Lesson</DialogTitle>
               </DialogHeader>
-              <Form {...form}>
-                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                  <FormField control={form.control} name="date" render={({ field }) => (
-                    <FormItem><FormLabel>Date</FormLabel><FormControl><Input type="date" {...field} /></FormControl><FormMessage /></FormItem>
-                  )} />
-                  <FormField control={form.control} name="title" render={({ field }) => (
-                    <FormItem><FormLabel>Title</FormLabel><FormControl><Input placeholder="Lesson title" {...field} /></FormControl><FormMessage /></FormItem>
-                  )} />
-                  <FormField control={form.control} name="topic" render={({ field }) => (
-                    <FormItem><FormLabel>Topic / Theme</FormLabel><FormControl><Input placeholder="E.g. Faith, Repentance" {...field} /></FormControl><FormMessage /></FormItem>
-                  )} />
-                  <FormField control={form.control} name="instructorId" render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Instructor</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value?.toString()}>
-                        <FormControl><SelectTrigger><SelectValue placeholder="Select member" /></SelectTrigger></FormControl>
-                        <SelectContent>
-                          <SelectItem value="">None (TBD)</SelectItem>
-                          {users?.map(u => <SelectItem key={u.id} value={u.id.toString()}>{u.firstName} {u.lastName}</SelectItem>)}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )} />
-                  <FormField control={form.control} name="location" render={({ field }) => (
-                    <FormItem><FormLabel>Location</FormLabel><FormControl><Input placeholder="Optional" {...field} /></FormControl><FormMessage /></FormItem>
-                  )} />
-                  <FormField control={form.control} name="notes" render={({ field }) => (
-                    <FormItem><FormLabel>Notes</FormLabel><FormControl><Textarea placeholder="Optional" className="min-h-[80px]" {...field} /></FormControl><FormMessage /></FormItem>
-                  )} />
-                  <DialogFooter className="pt-4">
+              <Form {...createForm}>
+                <form onSubmit={createForm.handleSubmit(onCreateSubmit)}>
+                  <LessonFormFields form={createForm} leaders={leaders} nonLeaders={nonLeaders} />
+                  <DialogFooter className="pt-6">
                     <Button type="button" variant="outline" onClick={() => setIsCreateOpen(false)}>Cancel</Button>
                     <Button type="submit" disabled={createMutation.isPending}>
-                      {createMutation.isPending ? "Scheduling..." : "Schedule"}
+                      {createMutation.isPending ? "Scheduling…" : "Schedule"}
                     </Button>
                   </DialogFooter>
                 </form>
@@ -157,6 +270,38 @@ export default function Lessons() {
           </Dialog>
         )}
       </div>
+
+      {/* Edit dialog */}
+      <Dialog open={editingId !== null} onOpenChange={(open) => { if (!open) setEditingId(null); }}>
+        <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Edit Lesson</DialogTitle>
+          </DialogHeader>
+          <Form {...editForm}>
+            <form onSubmit={editForm.handleSubmit(onEditSubmit)}>
+              <LessonFormFields form={editForm} leaders={leaders} nonLeaders={nonLeaders} />
+              <DialogFooter className="pt-6 flex justify-between">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  className="text-destructive hover:text-destructive hover:bg-destructive/10 mr-auto"
+                  onClick={() => editingLesson && handleDelete(editingLesson.id)}
+                  disabled={deleteMutation.isPending}
+                >
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  Delete
+                </Button>
+                <div className="flex gap-2">
+                  <Button type="button" variant="outline" onClick={() => setEditingId(null)}>Cancel</Button>
+                  <Button type="submit" disabled={updateMutation.isPending}>
+                    {updateMutation.isPending ? "Saving…" : "Save Changes"}
+                  </Button>
+                </div>
+              </DialogFooter>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
 
       {mineOnly && (
         <div className="flex items-center justify-between bg-secondary/5 border border-secondary/20 rounded-lg px-4 py-3">
@@ -182,25 +327,30 @@ export default function Lessons() {
       ) : (
         <div className="space-y-4">
           {displayedLessons?.map(item => (
-            <Card key={item.id} className="hover-elevate border-border border-l-4 border-l-secondary">
+            <Card
+              key={item.id}
+              className={`border-border border-l-4 border-l-secondary ${isLeader ? "hover-elevate cursor-pointer" : ""}`}
+              onClick={isLeader ? () => openEdit(item) : undefined}
+            >
               <CardHeader className="flex flex-row justify-between items-start pb-2">
                 <div>
                   <div className="text-sm text-secondary font-medium mb-1">
                     {format(new Date(item.date), "EEEE, MMMM do, yyyy")}
                   </div>
                   <CardTitle>{item.title}</CardTitle>
-                  <CardDescription className="text-base font-medium text-foreground mt-1">{item.topic}</CardDescription>
                 </div>
-                {isLeader && (
-                  <Button variant="ghost" size="icon" onClick={() => handleDelete(item.id)} className="text-destructive/70 hover:text-destructive hover:bg-destructive/10">
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
-                )}
               </CardHeader>
-              <CardContent className="grid sm:grid-cols-2 gap-4 text-sm text-muted-foreground">
+              <CardContent className="grid sm:grid-cols-2 gap-2 text-sm text-muted-foreground">
                 <div className="space-y-1">
-                  {item.instructorName && <div><span className="font-medium text-foreground">Instructor:</span> {item.instructorName}</div>}
-                  {item.location && <div><span className="font-medium text-foreground">Location:</span> {item.location}</div>}
+                  {item.instructorName && (
+                    <div><span className="font-medium text-foreground">Teacher:</span> {item.instructorName}</div>
+                  )}
+                  {item.assistingName && (
+                    <div><span className="font-medium text-foreground">Assisting:</span> {item.assistingName}</div>
+                  )}
+                  {item.goalSharingName && (
+                    <div><span className="font-medium text-foreground">Goal Sharing:</span> {item.goalSharingName}</div>
+                  )}
                 </div>
                 <div>
                   {item.notes && <p><span className="font-medium text-foreground">Notes:</span> {item.notes}</p>}

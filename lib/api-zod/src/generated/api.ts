@@ -390,9 +390,12 @@ export const ListLessonsResponseItem = zod.object({
   "topic": zod.string(),
   "instructorId": zod.number().nullish(),
   "instructorName": zod.string().nullish(),
+  "assistingId": zod.number().nullish(),
+  "assistingName": zod.string().nullish(),
+  "goalSharingId": zod.number().nullish(),
+  "goalSharingName": zod.string().nullish(),
   "activityId": zod.number().nullish(),
   "activityTitle": zod.string().nullish(),
-  "location": zod.string().nullish(),
   "notes": zod.string().nullish(),
   "groupId": zod.number(),
   "createdAt": zod.string().optional()
@@ -408,8 +411,9 @@ export const CreateLessonBody = zod.object({
   "title": zod.string(),
   "topic": zod.string(),
   "instructorId": zod.number().nullish(),
+  "assistingId": zod.number().nullish(),
+  "goalSharingId": zod.number().nullish(),
   "activityId": zod.number().nullish(),
-  "location": zod.string().nullish(),
   "notes": zod.string().nullish()
 })
 
@@ -426,8 +430,9 @@ export const UpdateLessonBody = zod.object({
   "title": zod.string().optional(),
   "topic": zod.string().optional(),
   "instructorId": zod.number().nullish(),
+  "assistingId": zod.number().nullish(),
+  "goalSharingId": zod.number().nullish(),
   "activityId": zod.number().nullish(),
-  "location": zod.string().nullish(),
   "notes": zod.string().nullish()
 })
 
@@ -438,9 +443,12 @@ export const UpdateLessonResponse = zod.object({
   "topic": zod.string(),
   "instructorId": zod.number().nullish(),
   "instructorName": zod.string().nullish(),
+  "assistingId": zod.number().nullish(),
+  "assistingName": zod.string().nullish(),
+  "goalSharingId": zod.number().nullish(),
+  "goalSharingName": zod.string().nullish(),
   "activityId": zod.number().nullish(),
   "activityTitle": zod.string().nullish(),
-  "location": zod.string().nullish(),
   "notes": zod.string().nullish(),
   "groupId": zod.number(),
   "createdAt": zod.string().optional()
@@ -627,9 +635,12 @@ export const GetDashboardResponse = zod.object({
   "topic": zod.string(),
   "instructorId": zod.number().nullish(),
   "instructorName": zod.string().nullish(),
+  "assistingId": zod.number().nullish(),
+  "assistingName": zod.string().nullish(),
+  "goalSharingId": zod.number().nullish(),
+  "goalSharingName": zod.string().nullish(),
   "activityId": zod.number().nullish(),
   "activityTitle": zod.string().nullish(),
-  "location": zod.string().nullish(),
   "notes": zod.string().nullish(),
   "groupId": zod.number(),
   "createdAt": zod.string().optional()

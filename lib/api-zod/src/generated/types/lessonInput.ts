@@ -13,9 +13,11 @@ export interface LessonInput {
   /** @nullable */
   instructorId?: number | null;
   /** @nullable */
-  activityId?: number | null;
+  assistingId?: number | null;
   /** @nullable */
-  location?: string | null;
+  goalSharingId?: number | null;
+  /** @nullable */
+  activityId?: number | null;
   /** @nullable */
   notes?: string | null;
 }

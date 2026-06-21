@@ -185,10 +185,13 @@ export default function Schedule() {
                     <FormField control={form.control} name="personInChargeId" render={({ field }) => (
                       <FormItem>
                         <FormLabel>Person in Charge</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value?.toString() || ""}>
+                        <Select
+                          onValueChange={(val) => field.onChange(val === "__none__" ? null : val)}
+                          value={field.value?.toString() || "__none__"}
+                        >
                           <FormControl><SelectTrigger><SelectValue placeholder="Select member" /></SelectTrigger></FormControl>
                           <SelectContent>
-                            <SelectItem value="">None</SelectItem>
+                            <SelectItem value="__none__">None</SelectItem>
                             {users?.map(u => <SelectItem key={u.id} value={u.id.toString()}>{u.firstName} {u.lastName}</SelectItem>)}
                           </SelectContent>
                         </Select>
@@ -198,10 +201,13 @@ export default function Schedule() {
                     <FormField control={form.control} name="treatsAssigneeId" render={({ field }) => (
                       <FormItem>
                         <FormLabel>Treats</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value?.toString() || ""}>
+                        <Select
+                          onValueChange={(val) => field.onChange(val === "__none__" ? null : val)}
+                          value={field.value?.toString() || "__none__"}
+                        >
                           <FormControl><SelectTrigger><SelectValue placeholder="Select member" /></SelectTrigger></FormControl>
                           <SelectContent>
-                            <SelectItem value="">None</SelectItem>
+                            <SelectItem value="__none__">None</SelectItem>
                             {users?.map(u => <SelectItem key={u.id} value={u.id.toString()}>{u.firstName} {u.lastName}</SelectItem>)}
                           </SelectContent>
                         </Select>

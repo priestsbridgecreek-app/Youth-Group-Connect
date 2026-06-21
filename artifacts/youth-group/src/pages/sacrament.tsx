@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useSearch, Link } from "wouter";
 import { useAuth } from "@/lib/auth";
 import {
@@ -25,7 +25,7 @@ import { Plus, Trash2, Shuffle, AlertCircle, Pencil } from "lucide-react";
 import { SacramentTrayIcon } from "@/components/icons/sacrament-tray";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { format, parseISO } from "date-fns";
+import { format, parseISO, differenceInDays } from "date-fns";
 
 const rotationSchema = z.object({
   date: z.string().min(1, "Date is required"),
@@ -59,6 +59,58 @@ export default function Sacrament() {
   });
 
   const activeUsers = users?.filter((u) => u.status === "active" && u.role !== "leader") ?? [];
+
+  // Map each userId to their most-recent rotation date
+  const userLastAssigned = useMemo(() => {
+    const map = new Map<number, string>();
+    for (const rotation of rotations ?? []) {
+      for (const member of rotation.members) {
+        const existing = map.get(member.userId);
+        if (!existing || rotation.date > existing) {
+          map.set(member.userId, rotation.date);
+        }
+      }
+    }
+    return map;
+  }, [rotations]);
+
+  // Sort active users: never-assigned first, then by oldest assignment date
+  const sortedByOverdue = useMemo(() => {
+    return [...activeUsers].sort((a, b) => {
+      const aDate = userLastAssigned.get(a.id);
+      const bDate = userLastAssigned.get(b.id);
+      if (!aDate && !bDate) return 0;
+      if (!aDate) return -1;
+      if (!bDate) return 1;
+      return aDate < bDate ? -1 : 1;
+    });
+  }, [activeUsers, userLastAssigned]);
+
+  // Suggested = top 3 plus any ties at position 3
+  const suggestedUserIds = useMemo(() => {
+    if (sortedByOverdue.length === 0) return new Set<number>();
+    const cutoffUser = sortedByOverdue[Math.min(2, sortedByOverdue.length - 1)];
+    const cutoffDate = userLastAssigned.get(cutoffUser.id); // undefined = never assigned
+    const ids = new Set<number>();
+    for (const u of sortedByOverdue) {
+      const d = userLastAssigned.get(u.id);
+      if (cutoffDate === undefined) {
+        if (d === undefined) ids.add(u.id);
+      } else {
+        if (d === undefined || d <= cutoffDate) ids.add(u.id);
+      }
+    }
+    return ids;
+  }, [sortedByOverdue, userLastAssigned]);
+
+  const getDaysAgoLabel = (userId: number): string => {
+    const dateStr = userLastAssigned.get(userId);
+    if (!dateStr) return "never assigned";
+    const days = differenceInDays(new Date(), parseISO(dateStr));
+    if (days === 0) return "assigned today";
+    if (days === 1) return "1 day ago";
+    return `${days} days ago`;
+  };
 
   const search = useSearch();
   const mineOnly = new URLSearchParams(search).get("mine") === "true";
@@ -167,40 +219,76 @@ export default function Sacrament() {
 
   const isLeader = user?.role === "presidency" || user?.role === "leader";
 
-  const RotationMemberFields = ({ form }: { form: ReturnType<typeof useForm<RotationFormValues>> }) => (
-    <>
-      {[0, 1, 2].map((index) => (
-        <FormField
-          key={index}
-          control={form.control}
-          name={`memberIds.${index}`}
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Member {index + 1}</FormLabel>
-              <Select
-                onValueChange={(val) => field.onChange(parseInt(val))}
-                value={field.value?.toString() || ""}
-              >
-                <FormControl>
-                  <SelectTrigger data-testid={`select-member-${index}`}>
-                    <SelectValue placeholder="Select member" />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  {activeUsers.map((u) => (
-                    <SelectItem key={u.id} value={u.id.toString()}>
-                      {u.firstName} {u.lastName}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-      ))}
-    </>
-  );
+  const RotationMemberFields = ({ form }: { form: ReturnType<typeof useForm<RotationFormValues>> }) => {
+    const suggestedList = sortedByOverdue.filter(u => suggestedUserIds.has(u.id));
+    return (
+      <>
+        {suggestedList.length > 0 && (
+          <div className="rounded-lg border border-amber-200 bg-amber-50 dark:bg-amber-950/20 dark:border-amber-900/40 p-3 space-y-2">
+            <p className="text-xs font-semibold text-amber-700 dark:text-amber-400 uppercase tracking-wide">
+              ★ Suggested — longest overdue
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {suggestedList.map(u => (
+                <span
+                  key={u.id}
+                  className="inline-flex items-center gap-1.5 rounded-full bg-amber-100 dark:bg-amber-900/40 border border-amber-300 dark:border-amber-700 px-2.5 py-1 text-xs font-medium text-amber-800 dark:text-amber-300"
+                >
+                  <span>{u.firstName} {u.lastName}</span>
+                  <span className="text-amber-500 dark:text-amber-500">·</span>
+                  <span className="text-amber-600 dark:text-amber-400">{getDaysAgoLabel(u.id)}</span>
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {[0, 1, 2].map((index) => (
+          <FormField
+            key={index}
+            control={form.control}
+            name={`memberIds.${index}`}
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Member {index + 1}</FormLabel>
+                <Select
+                  onValueChange={(val) => field.onChange(parseInt(val))}
+                  value={field.value?.toString() || ""}
+                >
+                  <FormControl>
+                    <SelectTrigger data-testid={`select-member-${index}`}>
+                      <SelectValue placeholder="Select member" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {sortedByOverdue.map((u) => {
+                      const isSuggested = suggestedUserIds.has(u.id);
+                      return (
+                        <SelectItem key={u.id} value={u.id.toString()}>
+                          <span className="flex items-center gap-2 w-full">
+                            {isSuggested && (
+                              <span className="text-amber-500 text-xs">★</span>
+                            )}
+                            <span className={isSuggested ? "font-medium" : ""}>
+                              {u.firstName} {u.lastName}
+                            </span>
+                            <span className="ml-auto text-xs text-muted-foreground">
+                              {getDaysAgoLabel(u.id)}
+                            </span>
+                          </span>
+                        </SelectItem>
+                      );
+                    })}
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        ))}
+      </>
+    );
+  };
 
   return (
     <div className="p-8 max-w-5xl mx-auto space-y-8">

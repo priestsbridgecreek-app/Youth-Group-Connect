@@ -62,7 +62,7 @@ export default function Sacrament() {
     query: { queryKey: getListUsersQueryKey() },
   });
 
-  const activeUsers = users?.filter((u) => u.status === "active" && u.role !== "leader") ?? [];
+  const activeUsers = users?.filter((u) => u.status === "active") ?? [];
 
   // Map each userId to their most-recent rotation date
   const userLastAssigned = useMemo(() => {
@@ -804,14 +804,9 @@ export default function Sacrament() {
                 >
                   <ChevronLeft className="w-3 h-3" />
                 </Button>
-                <Input
-                  type="number"
-                  min={1}
-                  max={52}
-                  value={autoFillWeeks}
-                  onChange={e => setAutoFillWeeks(Math.max(1, Math.min(52, parseInt(e.target.value) || 1)))}
-                  className="w-16 text-center"
-                />
+                <span className="w-10 text-center text-sm font-semibold tabular-nums select-none">
+                  {autoFillWeeks}
+                </span>
                 <Button
                   type="button"
                   variant="outline"

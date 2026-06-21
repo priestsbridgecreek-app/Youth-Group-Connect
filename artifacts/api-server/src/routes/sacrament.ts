@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { eq, and, ne, sql } from "drizzle-orm";
-import { db, sacramentRotationsTable, sacramentRotationMembersTable, usersTable } from "@workspace/db";
+import { db, sacramentRotationsTable, sacramentRotationMembersTable, substitutionRequestsTable, usersTable } from "@workspace/db";
 import {
   CreateSacramentRotationBody,
   UpdateSacramentRotationBody,
@@ -198,6 +198,7 @@ router.delete("/sacrament-rotations/:id", requireAuth, async (req, res): Promise
   const raw = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
   const id = parseInt(raw, 10);
 
+  await db.delete(substitutionRequestsTable).where(eq(substitutionRequestsTable.rotationId, id));
   await db.delete(sacramentRotationMembersTable).where(eq(sacramentRotationMembersTable.rotationId, id));
   await db.delete(sacramentRotationsTable).where(
     and(eq(sacramentRotationsTable.id, id), eq(sacramentRotationsTable.groupId, currentUser.groupId))

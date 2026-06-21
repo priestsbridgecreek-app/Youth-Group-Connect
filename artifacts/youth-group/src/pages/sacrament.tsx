@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useSearch, Link } from "wouter";
 import { useAuth } from "@/lib/auth";
 import {
@@ -131,6 +131,21 @@ export default function Sacrament() {
     },
   });
 
+  // Watch the date field so we can detect duplicates in real-time
+  const createDate = createForm.watch("date");
+  const existingForDate = useMemo(
+    () => rotations?.find(r => r.date === createDate) ?? null,
+    [rotations, createDate]
+  );
+
+  // When the selected date already has a rotation, pre-fill its members
+  useEffect(() => {
+    if (!isCreateOpen) return;
+    if (existingForDate) {
+      createForm.setValue("memberIds", existingForDate.members.map(m => m.userId), { shouldValidate: true });
+    }
+  }, [existingForDate, isCreateOpen]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const editForm = useForm<RotationFormValues>({
     resolver: zodResolver(rotationSchema),
     defaultValues: {
@@ -165,13 +180,19 @@ export default function Sacrament() {
 
   const onCreateSubmit = async (values: RotationFormValues) => {
     try {
-      await createMutation.mutateAsync({ data: values });
+      if (existingForDate) {
+        // Date already has a rotation — update it instead of creating a duplicate
+        await updateMutation.mutateAsync({ id: existingForDate.id, data: values });
+        toast({ title: "Rotation updated" });
+      } else {
+        await createMutation.mutateAsync({ data: values });
+        toast({ title: "Rotation created" });
+      }
       queryClient.invalidateQueries({ queryKey: getListSacramentRotationsQueryKey() });
       setIsCreateOpen(false);
       createForm.reset();
-      toast({ title: "Rotation created" });
     } catch {
-      toast({ title: "Failed to create rotation", variant: "destructive" });
+      toast({ title: "Failed to save rotation", variant: "destructive" });
     }
   };
 
@@ -347,12 +368,22 @@ export default function Sacrament() {
         )}
       </div>
 
-      {/* Create Dialog */}
+      {/* Create / Upsert Dialog */}
       <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
-            <DialogTitle>New Rotation</DialogTitle>
+            <DialogTitle>{existingForDate ? "Edit Rotation" : "New Rotation"}</DialogTitle>
           </DialogHeader>
+
+          {existingForDate && (
+            <div className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 dark:bg-amber-950/20 dark:border-amber-900/40 px-3 py-2.5 text-sm text-amber-800 dark:text-amber-300">
+              <AlertCircle className="w-4 h-4 mt-0.5 shrink-0 text-amber-500" />
+              <span>
+                A rotation already exists for this date — editing it instead of creating a new one.
+              </span>
+            </div>
+          )}
+
           <div className="flex justify-end">
             <Button
               type="button"
@@ -386,8 +417,16 @@ export default function Sacrament() {
                 <Button type="button" variant="outline" onClick={() => setIsCreateOpen(false)}>
                   Cancel
                 </Button>
-                <Button type="submit" disabled={createMutation.isPending} data-testid="button-save-rotation">
-                  {createMutation.isPending ? "Saving..." : "Save Rotation"}
+                <Button
+                  type="submit"
+                  disabled={createMutation.isPending || updateMutation.isPending}
+                  data-testid="button-save-rotation"
+                >
+                  {createMutation.isPending || updateMutation.isPending
+                    ? "Saving..."
+                    : existingForDate
+                    ? "Update Rotation"
+                    : "Save Rotation"}
                 </Button>
               </DialogFooter>
             </form>

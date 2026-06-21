@@ -108,6 +108,8 @@ export const UserUpdateStatus = {
 } as const;
 
 export interface UserUpdate {
+  firstName?: string;
+  lastName?: string;
   role?: UserUpdateRole;
   status?: UserUpdateStatus;
   /** @nullable */

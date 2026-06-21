@@ -106,6 +106,8 @@ export const UpdateUserParams = zod.object({
 })
 
 export const UpdateUserBody = zod.object({
+  "firstName": zod.string().optional(),
+  "lastName": zod.string().optional(),
   "role": zod.enum(['member', 'presidency', 'leader']).optional(),
   "status": zod.enum(['active', 'inactive', 'archived']).optional(),
   "groupId": zod.number().nullish()

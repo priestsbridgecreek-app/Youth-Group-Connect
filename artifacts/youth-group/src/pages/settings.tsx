@@ -20,6 +20,10 @@ export default function Settings() {
   const [editing, setEditing] = useState(false);
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
+  const [customDigits, setCustomDigits] = useState("");
+  const [settingCode, setSettingCode] = useState(false);
+
+  const initials = `${user?.firstName?.[0] ?? ""}${user?.lastName?.[0] ?? ""}`.toUpperCase();
 
   const copyCode = async () => {
     if (!user?.accessCode) return;
@@ -151,25 +155,84 @@ export default function Settings() {
                   {copied ? "Copied" : "Copy"}
                 </Button>
               </div>
-              <Button
-                variant="outline"
-                size="sm"
-                className="mt-2"
-                disabled={resetCodeMutation.isPending}
-                onClick={async () => {
-                  if (!user) return;
-                  try {
-                    await resetCodeMutation.mutateAsync({ userId: user.id, data: {} });
-                    await refetch();
-                    toast({ title: "New access code generated" });
-                  } catch {
-                    toast({ title: "Failed to generate new code", variant: "destructive" });
-                  }
-                }}
-              >
-                <RefreshCw className="w-3.5 h-3.5 mr-2" />
-                {resetCodeMutation.isPending ? "Generating…" : "Generate New Code"}
-              </Button>
+              <div className="flex flex-wrap gap-2 mt-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={resetCodeMutation.isPending}
+                  onClick={async () => {
+                    if (!user) return;
+                    try {
+                      await resetCodeMutation.mutateAsync({ userId: user.id, data: {} });
+                      await refetch();
+                      setSettingCode(false);
+                      toast({ title: "New access code generated" });
+                    } catch {
+                      toast({ title: "Failed to generate new code", variant: "destructive" });
+                    }
+                  }}
+                >
+                  <RefreshCw className="w-3.5 h-3.5 mr-2" />
+                  {resetCodeMutation.isPending ? "Generating…" : "Generate Random"}
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => { setSettingCode(s => !s); setCustomDigits(""); }}
+                >
+                  <Pencil className="w-3.5 h-3.5 mr-2" />
+                  Set My Own
+                </Button>
+              </div>
+
+              {settingCode && (
+                <div className="mt-3 space-y-2">
+                  <p className="text-sm text-muted-foreground">
+                    Enter 4 digits for your code. Your initials <span className="font-mono font-bold text-foreground">{initials}</span> will be added automatically.
+                  </p>
+                  <div className="flex items-center gap-2">
+                    <span className="font-mono text-lg font-bold text-foreground tracking-widest">{initials}</span>
+                    <Input
+                      className="font-mono text-lg tracking-widest text-center w-28"
+                      placeholder="0000"
+                      maxLength={4}
+                      value={customDigits}
+                      onChange={e => setCustomDigits(e.target.value.replace(/\D/g, "").slice(0, 4))}
+                      autoFocus
+                    />
+                    <Button
+                      size="sm"
+                      disabled={customDigits.length !== 4 || resetCodeMutation.isPending}
+                      onClick={async () => {
+                        if (!user || customDigits.length !== 4) return;
+                        try {
+                          await resetCodeMutation.mutateAsync({
+                            userId: user.id,
+                            data: { customCode: `${initials}${customDigits}` },
+                          });
+                          await refetch();
+                          setSettingCode(false);
+                          setCustomDigits("");
+                          toast({ title: "Access code updated" });
+                        } catch {
+                          toast({ title: "Failed to set code", variant: "destructive" });
+                        }
+                      }}
+                    >
+                      <Check className="w-3.5 h-3.5 mr-1" />
+                      Save
+                    </Button>
+                    <Button variant="ghost" size="sm" onClick={() => { setSettingCode(false); setCustomDigits(""); }}>
+                      <X className="w-3.5 h-3.5" />
+                    </Button>
+                  </div>
+                  {customDigits.length === 4 && (
+                    <p className="text-xs text-muted-foreground">
+                      Your new code will be: <span className="font-mono font-bold text-foreground">{initials}{customDigits}</span>
+                    </p>
+                  )}
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>

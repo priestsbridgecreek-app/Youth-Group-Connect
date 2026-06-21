@@ -107,13 +107,17 @@ router.get("/users/:userId", requireAuth, async (req, res): Promise<void> => {
 
 router.patch("/users/:userId", requireAuth, async (req, res): Promise<void> => {
   const currentUser = (req as any).currentUser;
-  if (currentUser.role !== "leader") {
+  const raw = Array.isArray(req.params.userId) ? req.params.userId[0] : req.params.userId;
+  const userId = parseInt(raw, 10);
+
+  const isSelf = userId === currentUser.id;
+  const isLeader = currentUser.role === "leader";
+
+  // Anyone can edit their own record; only leaders can edit others
+  if (!isSelf && !isLeader) {
     res.status(403).json({ error: "Forbidden" });
     return;
   }
-
-  const raw = Array.isArray(req.params.userId) ? req.params.userId[0] : req.params.userId;
-  const userId = parseInt(raw, 10);
 
   const parsed = UpdateUserBody.safeParse(req.body);
   if (!parsed.success) {
@@ -122,9 +126,20 @@ router.patch("/users/:userId", requireAuth, async (req, res): Promise<void> => {
   }
 
   const updates: Partial<typeof usersTable.$inferInsert> = {};
-  if (parsed.data.role) updates.role = parsed.data.role;
-  if (parsed.data.status) updates.status = parsed.data.status;
-  if (parsed.data.groupId !== undefined) updates.groupId = parsed.data.groupId ?? currentUser.groupId;
+  // Name fields — allowed for self or leader
+  if (parsed.data.firstName?.trim()) updates.firstName = parsed.data.firstName.trim();
+  if (parsed.data.lastName?.trim()) updates.lastName = parsed.data.lastName.trim();
+  // Role/status/group — leaders only
+  if (isLeader) {
+    if (parsed.data.role) updates.role = parsed.data.role;
+    if (parsed.data.status) updates.status = parsed.data.status;
+    if (parsed.data.groupId !== undefined) updates.groupId = parsed.data.groupId ?? currentUser.groupId;
+  }
+
+  if (Object.keys(updates).length === 0) {
+    res.status(400).json({ error: "No valid fields to update" });
+    return;
+  }
 
   await db.update(usersTable).set(updates).where(eq(usersTable.id, userId));
   const user = await getUserWithGroup(userId);

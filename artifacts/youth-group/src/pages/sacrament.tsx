@@ -221,28 +221,16 @@ export default function Sacrament() {
 
   const RotationMemberFields = ({ form }: { form: ReturnType<typeof useForm<RotationFormValues>> }) => {
     const suggestedList = sortedByOverdue.filter(u => suggestedUserIds.has(u.id));
+    const currentIds: number[] = form.watch("memberIds") ?? [];
+
+    const handleSuggestionClick = (userId: number) => {
+      const emptyIndex = [0, 1, 2].findIndex(i => !currentIds[i]);
+      if (emptyIndex === -1) return;
+      form.setValue(`memberIds.${emptyIndex}`, userId, { shouldValidate: true });
+    };
+
     return (
       <>
-        {suggestedList.length > 0 && (
-          <div className="rounded-lg border border-amber-200 bg-amber-50 dark:bg-amber-950/20 dark:border-amber-900/40 p-3 space-y-2">
-            <p className="text-xs font-semibold text-amber-700 dark:text-amber-400 uppercase tracking-wide">
-              ★ Suggested — longest overdue
-            </p>
-            <div className="flex flex-wrap gap-2">
-              {suggestedList.map(u => (
-                <span
-                  key={u.id}
-                  className="inline-flex items-center gap-1.5 rounded-full bg-amber-100 dark:bg-amber-900/40 border border-amber-300 dark:border-amber-700 px-2.5 py-1 text-xs font-medium text-amber-800 dark:text-amber-300"
-                >
-                  <span>{u.firstName} {u.lastName}</span>
-                  <span className="text-amber-500 dark:text-amber-500">·</span>
-                  <span className="text-amber-600 dark:text-amber-400">{getDaysAgoLabel(u.id)}</span>
-                </span>
-              ))}
-            </div>
-          </div>
-        )}
-
         {[0, 1, 2].map((index) => (
           <FormField
             key={index}
@@ -286,6 +274,47 @@ export default function Sacrament() {
             )}
           />
         ))}
+
+        {suggestedList.length > 0 && (
+          <div className="rounded-lg border border-amber-200 bg-amber-50 dark:bg-amber-950/20 dark:border-amber-900/40 p-3 space-y-2">
+            <p className="text-xs font-semibold text-amber-700 dark:text-amber-400 uppercase tracking-wide">
+              ★ Suggested — longest overdue · click to add
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {suggestedList.map(u => {
+                const slotIndex = currentIds.indexOf(u.id);
+                const isSelected = slotIndex !== -1;
+                const allFull = currentIds.filter(Boolean).length === 3 && !isSelected;
+                return (
+                  <button
+                    key={u.id}
+                    type="button"
+                    disabled={allFull}
+                    onClick={() => !isSelected && handleSuggestionClick(u.id)}
+                    className={[
+                      "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium transition-all",
+                      isSelected
+                        ? "bg-amber-200 dark:bg-amber-800/60 border-amber-400 dark:border-amber-600 text-amber-700 dark:text-amber-300 cursor-default"
+                        : allFull
+                        ? "bg-amber-50 dark:bg-transparent border-amber-200 dark:border-amber-900 text-amber-400 dark:text-amber-600 opacity-50 cursor-not-allowed"
+                        : "bg-amber-100 dark:bg-amber-900/40 border-amber-300 dark:border-amber-700 text-amber-800 dark:text-amber-300 cursor-pointer hover:bg-amber-200 dark:hover:bg-amber-800/60 hover:border-amber-400",
+                    ].join(" ")}
+                  >
+                    {isSelected && <span className="text-amber-600 dark:text-amber-400">✓</span>}
+                    <span>{u.firstName} {u.lastName}</span>
+                    <span className="text-amber-500">·</span>
+                    <span className="text-amber-600 dark:text-amber-400">{getDaysAgoLabel(u.id)}</span>
+                    {isSelected && (
+                      <span className="text-amber-500 dark:text-amber-400 font-normal">
+                        #{slotIndex + 1}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
       </>
     );
   };

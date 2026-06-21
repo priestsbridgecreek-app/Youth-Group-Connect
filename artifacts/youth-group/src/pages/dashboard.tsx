@@ -1,11 +1,12 @@
 import { useGetDashboard, getGetDashboardQueryKey } from "@workspace/api-client-react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { format } from "date-fns";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/lib/auth";
 import { CalendarDays, BookOpen, MessageSquareQuote } from "lucide-react";
 import { SacramentTrayIcon } from "@/components/icons/sacrament-tray";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Link } from "wouter";
 
 export default function Dashboard() {
   const { user } = useAuth();
@@ -40,49 +41,57 @@ export default function Dashboard() {
       </div>
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-        <Card className="bg-primary/5 border-primary/20">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">My Activities</CardTitle>
-            <CalendarDays className="h-4 w-4 text-primary" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{myAssignments.activities.length}</div>
-            <p className="text-xs text-muted-foreground">Upcoming assigned activities</p>
-          </CardContent>
-        </Card>
-        
-        <Card className="bg-secondary/5 border-secondary/20">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">My Lessons</CardTitle>
-            <BookOpen className="h-4 w-4 text-secondary" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{myAssignments.lessons.length}</div>
-            <p className="text-xs text-muted-foreground">Upcoming assigned lessons</p>
-          </CardContent>
-        </Card>
+        <Link href="/schedule?mine=true" className="block group">
+          <Card className="bg-primary/5 border-primary/20 transition-shadow group-hover:shadow-md cursor-pointer h-full">
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium">My Activities</CardTitle>
+              <CalendarDays className="h-4 w-4 text-primary" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{myAssignments.activities.length}</div>
+              <p className="text-xs text-muted-foreground">Upcoming assigned activities</p>
+            </CardContent>
+          </Card>
+        </Link>
 
-        <Card className="bg-blue-50 border-blue-100 dark:bg-blue-950/20 dark:border-blue-900/30">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Sacrament</CardTitle>
-            <SacramentTrayIcon className="h-4 w-4 text-blue-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{myAssignments.rotations.length}</div>
-            <p className="text-xs text-muted-foreground">Upcoming rotations</p>
-          </CardContent>
-        </Card>
+        <Link href="/lessons?mine=true" className="block group">
+          <Card className="bg-secondary/5 border-secondary/20 transition-shadow group-hover:shadow-md cursor-pointer h-full">
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium">My Lessons</CardTitle>
+              <BookOpen className="h-4 w-4 text-secondary" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{myAssignments.lessons.length}</div>
+              <p className="text-xs text-muted-foreground">Upcoming assigned lessons</p>
+            </CardContent>
+          </Card>
+        </Link>
 
-        <Card className={pendingRequests > 0 ? "bg-destructive/5 border-destructive/20" : ""}>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Requests</CardTitle>
-            <MessageSquareQuote className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{pendingRequests}</div>
-            <p className="text-xs text-muted-foreground">Pending substitution requests</p>
-          </CardContent>
-        </Card>
+        <Link href="/sacrament?mine=true" className="block group">
+          <Card className="bg-blue-50 border-blue-100 dark:bg-blue-950/20 dark:border-blue-900/30 transition-shadow group-hover:shadow-md cursor-pointer h-full">
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium">Sacrament</CardTitle>
+              <SacramentTrayIcon className="h-4 w-4 text-blue-500" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{myAssignments.rotations.length}</div>
+              <p className="text-xs text-muted-foreground">Upcoming rotations</p>
+            </CardContent>
+          </Card>
+        </Link>
+
+        <Link href="/requests" className="block group">
+          <Card className={`transition-shadow group-hover:shadow-md cursor-pointer h-full ${pendingRequests > 0 ? "bg-destructive/5 border-destructive/20" : ""}`}>
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium">Requests</CardTitle>
+              <MessageSquareQuote className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{pendingRequests}</div>
+              <p className="text-xs text-muted-foreground">Pending substitution requests</p>
+            </CardContent>
+          </Card>
+        </Link>
       </div>
 
       <div className="grid gap-6 md:grid-cols-2">

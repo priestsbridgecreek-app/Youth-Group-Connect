@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useSearch, Link } from "wouter";
 import { useAuth } from "@/lib/auth";
 import {
   useListSacramentRotations, getListSacramentRotationsQueryKey,
@@ -58,6 +59,12 @@ export default function Sacrament() {
   });
 
   const activeUsers = users?.filter((u) => u.status === "active" && u.role !== "leader") ?? [];
+
+  const search = useSearch();
+  const mineOnly = new URLSearchParams(search).get("mine") === "true";
+  const displayedRotations = mineOnly
+    ? rotations?.filter(r => r.members.some(m => m.userId === user?.id))
+    : rotations;
 
   const createMutation = useCreateSacramentRotation();
   const updateMutation = useUpdateSacramentRotation();
@@ -353,21 +360,32 @@ export default function Sacrament() {
         </DialogContent>
       </Dialog>
 
+      {mineOnly && (
+        <div className="flex items-center justify-between bg-blue-50 border border-blue-100 dark:bg-blue-950/20 dark:border-blue-900/30 rounded-lg px-4 py-3">
+          <p className="text-sm font-medium text-blue-700 dark:text-blue-300">Showing your sacrament assignments</p>
+          <Link href="/sacrament" className="text-sm text-muted-foreground hover:text-foreground underline underline-offset-2">View all</Link>
+        </div>
+      )}
+
       {isLoading ? (
         <div className="space-y-4">
           {[1, 2, 3].map((i) => (
             <Skeleton key={i} className="h-24" />
           ))}
         </div>
-      ) : rotations?.length === 0 ? (
+      ) : displayedRotations?.length === 0 ? (
         <div className="text-center py-16 bg-card border border-border rounded-xl border-dashed">
           <SacramentTrayIcon className="w-12 h-12 text-muted-foreground/50 mx-auto mb-4" />
-          <h3 className="text-xl font-medium text-foreground mb-2">No rotations scheduled</h3>
-          <p className="text-muted-foreground">The upcoming sacrament schedule is empty.</p>
+          <h3 className="text-xl font-medium text-foreground mb-2">
+            {mineOnly ? "No upcoming assignments" : "No rotations scheduled"}
+          </h3>
+          <p className="text-muted-foreground">
+            {mineOnly ? "You are not assigned to any upcoming rotations." : "The upcoming sacrament schedule is empty."}
+          </p>
         </div>
       ) : (
         <div className="flex flex-col gap-4">
-          {rotations?.map((rotation) => {
+          {displayedRotations?.map((rotation) => {
             const isAssigned = rotation.members.some((m) => m.userId === user?.id);
             return (
               <Card

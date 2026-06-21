@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useAuth } from "@/lib/auth";
+import { useSearch, Link } from "wouter";
 import { 
   useListScheduledActivities, getListScheduledActivitiesQueryKey,
   useCreateScheduledActivity,
@@ -119,6 +120,15 @@ export default function Schedule() {
   };
 
   const isLeader = user?.role === "presidency" || user?.role === "leader";
+
+  const search = useSearch();
+  const mineOnly = new URLSearchParams(search).get("mine") === "true";
+  const fullName = user ? `${user.firstName} ${user.lastName}` : "";
+  const displayedScheduled = mineOnly
+    ? scheduled?.filter(item =>
+        item.personInChargeName === fullName || item.treatsAssigneeName === fullName
+      )
+    : scheduled;
 
   return (
     <div className="p-8 max-w-5xl mx-auto space-y-8">
@@ -255,19 +265,30 @@ export default function Schedule() {
         </DialogContent>
       </Dialog>
 
+      {mineOnly && (
+        <div className="flex items-center justify-between bg-primary/5 border border-primary/20 rounded-lg px-4 py-3">
+          <p className="text-sm font-medium text-primary">Showing your assigned activities</p>
+          <Link href="/schedule" className="text-sm text-muted-foreground hover:text-foreground underline underline-offset-2">View all</Link>
+        </div>
+      )}
+
       {isLoadingScheduled ? (
         <div className="space-y-4">
           {[1, 2, 3].map(i => <Skeleton key={i} className="h-32" />)}
         </div>
-      ) : scheduled?.length === 0 ? (
+      ) : displayedScheduled?.length === 0 ? (
         <div className="text-center py-16 bg-card border border-border rounded-xl border-dashed">
           <CalendarDays className="w-12 h-12 text-muted-foreground/50 mx-auto mb-4" />
-          <h3 className="text-xl font-medium text-foreground mb-2">No activities scheduled</h3>
-          <p className="text-muted-foreground">The upcoming schedule is empty.</p>
+          <h3 className="text-xl font-medium text-foreground mb-2">
+            {mineOnly ? "No upcoming assignments" : "No activities scheduled"}
+          </h3>
+          <p className="text-muted-foreground">
+            {mineOnly ? "You have no upcoming activities assigned to you." : "The upcoming schedule is empty."}
+          </p>
         </div>
       ) : (
         <div className="space-y-4">
-          {scheduled?.map(item => (
+          {displayedScheduled?.map(item => (
             <Card key={item.id} className="hover-elevate border-border">
               <CardHeader className="flex flex-row justify-between items-start pb-2">
                 <div>

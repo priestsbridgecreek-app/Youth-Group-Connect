@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useAuth } from "@/lib/auth";
+import { useSearch, Link } from "wouter";
 import { 
   useListLessons, getListLessonsQueryKey,
   useCreateLesson,
@@ -84,6 +85,13 @@ export default function Lessons() {
 
   const isLeader = user?.role === "presidency" || user?.role === "leader";
 
+  const search = useSearch();
+  const mineOnly = new URLSearchParams(search).get("mine") === "true";
+  const fullName = user ? `${user.firstName} ${user.lastName}` : "";
+  const displayedLessons = mineOnly
+    ? lessons?.filter(item => item.instructorName === fullName)
+    : lessons;
+
   return (
     <div className="p-8 max-w-5xl mx-auto space-y-8">
       <div className="flex justify-between items-center">
@@ -150,19 +158,30 @@ export default function Lessons() {
         )}
       </div>
 
+      {mineOnly && (
+        <div className="flex items-center justify-between bg-secondary/5 border border-secondary/20 rounded-lg px-4 py-3">
+          <p className="text-sm font-medium text-secondary">Showing lessons you're teaching</p>
+          <Link href="/lessons" className="text-sm text-muted-foreground hover:text-foreground underline underline-offset-2">View all</Link>
+        </div>
+      )}
+
       {isLoading ? (
         <div className="space-y-4">
           {[1, 2, 3].map(i => <Skeleton key={i} className="h-32" />)}
         </div>
-      ) : lessons?.length === 0 ? (
+      ) : displayedLessons?.length === 0 ? (
         <div className="text-center py-16 bg-card border border-border rounded-xl border-dashed">
           <BookOpen className="w-12 h-12 text-muted-foreground/50 mx-auto mb-4" />
-          <h3 className="text-xl font-medium text-foreground mb-2">No lessons scheduled</h3>
-          <p className="text-muted-foreground">The upcoming schedule is empty.</p>
+          <h3 className="text-xl font-medium text-foreground mb-2">
+            {mineOnly ? "No upcoming lessons assigned" : "No lessons scheduled"}
+          </h3>
+          <p className="text-muted-foreground">
+            {mineOnly ? "You have no upcoming lessons assigned to you as instructor." : "The upcoming schedule is empty."}
+          </p>
         </div>
       ) : (
         <div className="space-y-4">
-          {lessons?.map(item => (
+          {displayedLessons?.map(item => (
             <Card key={item.id} className="hover-elevate border-border border-l-4 border-l-secondary">
               <CardHeader className="flex flex-row justify-between items-start pb-2">
                 <div>

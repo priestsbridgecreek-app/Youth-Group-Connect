@@ -13,6 +13,7 @@ import Lessons from "@/pages/lessons";
 import Sacrament from "@/pages/sacrament";
 import Requests from "@/pages/requests";
 import Members from "@/pages/members";
+import MemberProfile from "@/pages/member-profile";
 import Settings from "@/pages/settings";
 
 const queryClient = new QueryClient({
@@ -45,6 +46,7 @@ function Router() {
       <PrivateRoute path="/sacrament" component={Sacrament} />
       <PrivateRoute path="/requests" component={Requests} />
       <PrivateRoute path="/members" component={Members} />
+      <PrivateRoute path="/members/:userId" component={MemberProfile} />
       <PrivateRoute path="/settings" component={Settings} />
       <Route path="/" component={() => {
         window.location.href = "/dashboard";

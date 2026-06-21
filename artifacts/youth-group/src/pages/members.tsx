@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useAuth } from "@/lib/auth";
+import { useLocation } from "wouter";
 import { 
   useListUsers, getListUsersQueryKey,
   useInviteUser,
@@ -32,6 +33,7 @@ export default function Members() {
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const [, navigate] = useLocation();
   const [isInviteOpen, setIsInviteOpen] = useState(false);
   const [resetCodeModal, setResetCodeModal] = useState<{isOpen: boolean, userId: number, userName: string}>({isOpen: false, userId: 0, userName: ""});
   const [newAccessCode, setNewAccessCode] = useState("");
@@ -196,7 +198,11 @@ export default function Members() {
       ) : (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {users?.map(member => (
-            <Card key={member.id} className={`hover-elevate border-border ${member.status === 'archived' ? 'opacity-50' : ''}`}>
+            <Card
+              key={member.id}
+              className={`hover-elevate border-border ${member.status === 'archived' ? 'opacity-50' : ''} ${isLeader ? 'cursor-pointer' : ''}`}
+              onClick={isLeader ? () => navigate(`/members/${member.id}`) : undefined}
+            >
               <CardContent className="p-4 flex justify-between items-center h-full">
                 <div className="space-y-1.5">
                   <div className="font-semibold text-lg flex items-center gap-2">

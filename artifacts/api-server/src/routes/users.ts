@@ -10,8 +10,8 @@ function generateAccessCode(firstName: string, lastName: string): string {
   const initials = (
     (firstName[0] ?? "X") + (lastName[0] ?? "X")
   ).toUpperCase();
-  const digits = Math.floor(100000 + Math.random() * 900000).toString();
-  return `${initials}-${digits}`;
+  const digits = Math.floor(1000 + Math.random() * 9000).toString();
+  return `${initials}${digits}`;
 }
 
 async function getUserWithGroup(userId: number) {

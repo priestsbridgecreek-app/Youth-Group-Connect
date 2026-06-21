@@ -1,5 +1,5 @@
 import { useGetDashboard, getGetDashboardQueryKey } from "@workspace/api-client-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { format } from "date-fns";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/lib/auth";

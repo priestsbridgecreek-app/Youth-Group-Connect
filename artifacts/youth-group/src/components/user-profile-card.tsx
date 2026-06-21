@@ -182,7 +182,7 @@ export function UserProfileCard({ targetUser, onSaved, readonlyName = false }: U
               onClick={() => { setSettingCode(s => !s); setCustomDigits(""); }}
             >
               <Pencil className="w-3.5 h-3.5 mr-2" />
-              Set My Own
+              Set Manually
             </Button>
           </div>
 

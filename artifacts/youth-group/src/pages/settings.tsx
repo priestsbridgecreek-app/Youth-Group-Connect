@@ -1,7 +1,7 @@
 import { useAuth } from "@/lib/auth";
-import { useUpdateUser } from "@workspace/api-client-react";
+import { useUpdateUser, useResetAccessCode } from "@workspace/api-client-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Settings as SettingsIcon, Shield, Copy, CheckCircle2, Pencil, X, Check } from "lucide-react";
+import { Settings as SettingsIcon, Shield, Copy, CheckCircle2, Pencil, X, Check, RefreshCw } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -13,6 +13,8 @@ export default function Settings() {
   const { user, refetch } = useAuth();
   const { toast } = useToast();
   const updateMutation = useUpdateUser();
+
+  const resetCodeMutation = useResetAccessCode();
 
   const [copied, setCopied] = useState(false);
   const [editing, setEditing] = useState(false);
@@ -144,11 +146,30 @@ export default function Settings() {
                   readOnly
                   className="font-mono text-lg tracking-widest text-center"
                 />
-                <Button variant="secondary" onClick={copyCode} className="w-24">
+                <Button variant="secondary" onClick={copyCode} className="w-24 shrink-0">
                   {copied ? <CheckCircle2 className="w-4 h-4" /> : <Copy className="w-4 h-4 mr-2" />}
                   {copied ? "Copied" : "Copy"}
                 </Button>
               </div>
+              <Button
+                variant="outline"
+                size="sm"
+                className="mt-2"
+                disabled={resetCodeMutation.isPending}
+                onClick={async () => {
+                  if (!user) return;
+                  try {
+                    await resetCodeMutation.mutateAsync({ userId: user.id, data: {} });
+                    await refetch();
+                    toast({ title: "New access code generated" });
+                  } catch {
+                    toast({ title: "Failed to generate new code", variant: "destructive" });
+                  }
+                }}
+              >
+                <RefreshCw className="w-3.5 h-3.5 mr-2" />
+                {resetCodeMutation.isPending ? "Generating…" : "Generate New Code"}
+              </Button>
             </div>
           </CardContent>
         </Card>

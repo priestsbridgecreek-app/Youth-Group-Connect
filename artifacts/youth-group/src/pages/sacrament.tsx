@@ -53,6 +53,7 @@ export default function Sacrament() {
   const [autoFillWeeks, setAutoFillWeeks] = useState(4);
   const [autoFillPreview, setAutoFillPreview] = useState<{ date: string; memberIds: number[]; memberNames: string[] }[]>([]);
   const [isSavingAutoFill, setIsSavingAutoFill] = useState(false);
+  const [autoFillGenerated, setAutoFillGenerated] = useState(false);
 
   const { data: rotations, isLoading } = useListSacramentRotations(undefined, {
     query: { queryKey: getListSacramentRotationsQueryKey() },
@@ -476,6 +477,7 @@ export default function Sacrament() {
               onClick={() => {
                 setAutoFillPreview([]);
                 setAutoFillWeeks(4);
+                setAutoFillGenerated(false);
                 setAutoFillOpen(true);
               }}
             >
@@ -800,7 +802,7 @@ export default function Sacrament() {
                   variant="outline"
                   size="icon"
                   className="h-8 w-8"
-                  onClick={() => setAutoFillWeeks(w => Math.max(1, w - 1))}
+                  onClick={() => { setAutoFillWeeks(w => Math.max(1, w - 1)); setAutoFillGenerated(false); }}
                 >
                   <ChevronLeft className="w-3 h-3" />
                 </Button>
@@ -812,7 +814,7 @@ export default function Sacrament() {
                   variant="outline"
                   size="icon"
                   className="h-8 w-8"
-                  onClick={() => setAutoFillWeeks(w => Math.min(52, w + 1))}
+                  onClick={() => { setAutoFillWeeks(w => Math.min(52, w + 1)); setAutoFillGenerated(false); }}
                 >
                   <ChevronRight className="w-3 h-3" />
                 </Button>
@@ -820,7 +822,7 @@ export default function Sacrament() {
               <Button
                 type="button"
                 variant="secondary"
-                onClick={() => setAutoFillPreview(smartAutoAssign(getUpcomingSundays(autoFillWeeks)))}
+                onClick={() => { setAutoFillPreview(smartAutoAssign(getUpcomingSundays(autoFillWeeks))); setAutoFillGenerated(true); }}
                 disabled={activeUsers.length < 3}
               >
                 <Wand2 className="w-4 h-4 mr-2" />
@@ -856,9 +858,24 @@ export default function Sacrament() {
             )}
 
             {autoFillPreview.length === 0 && activeUsers.length >= 3 && (
-              <p className="text-sm text-muted-foreground text-center py-4 border border-dashed border-border rounded-lg">
-                Click <span className="font-medium">Preview</span> to generate assignments.
-              </p>
+              <div className="text-sm text-center py-4 border border-dashed border-border rounded-lg px-4">
+                {autoFillGenerated ? (
+                  <p className="text-muted-foreground">
+                    All {autoFillWeeks} upcoming Sundays are already scheduled.{" "}
+                    <button
+                      type="button"
+                      className="underline font-medium text-foreground hover:text-primary"
+                      onClick={() => { setAutoFillWeeks(w => w + 4); setAutoFillGenerated(false); }}
+                    >
+                      Try {autoFillWeeks + 4} weeks instead
+                    </button>
+                  </p>
+                ) : (
+                  <p className="text-muted-foreground">
+                    Click <span className="font-medium text-foreground">Preview</span> to generate assignments.
+                  </p>
+                )}
+              </div>
             )}
           </div>
 

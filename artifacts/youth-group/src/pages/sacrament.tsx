@@ -21,7 +21,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Plus, Trash2, Shuffle, AlertCircle, Pencil } from "lucide-react";
+import { Plus, Trash2, Shuffle, AlertCircle, Pencil, ChevronLeft, ChevronRight, Wand2 } from "lucide-react";
 import { SacramentTrayIcon } from "@/components/icons/sacrament-tray";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
@@ -49,6 +49,10 @@ export default function Sacrament() {
   const [randomizing, setRandomizing] = useState(false);
   const [subModalOpen, setSubModalOpen] = useState(false);
   const [subRotationId, setSubRotationId] = useState<number>(0);
+  const [autoFillOpen, setAutoFillOpen] = useState(false);
+  const [autoFillWeeks, setAutoFillWeeks] = useState(4);
+  const [autoFillPreview, setAutoFillPreview] = useState<{ date: string; memberIds: number[]; memberNames: string[] }[]>([]);
+  const [isSavingAutoFill, setIsSavingAutoFill] = useState(false);
 
   const { data: rotations, isLoading } = useListSacramentRotations(undefined, {
     query: { queryKey: getListSacramentRotationsQueryKey() },
@@ -110,6 +114,103 @@ export default function Sacrament() {
     if (days === 0) return "assigned today";
     if (days === 1) return "1 day ago";
     return `${days} days ago`;
+  };
+
+  // ── Sunday navigation helpers ────────────────────────────────────────────
+  const stepToSunday = (dateStr: string, direction: 1 | -1): string => {
+    const d = new Date(dateStr + "T12:00:00");
+    const day = d.getDay();
+    if (direction === 1) {
+      d.setDate(d.getDate() + (day === 0 ? 7 : 7 - day));
+    } else {
+      d.setDate(d.getDate() - (day === 0 ? 7 : day));
+    }
+    return d.toISOString().split("T")[0];
+  };
+
+  const getUpcomingSundays = (n: number): string[] => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const day = today.getDay();
+    const daysUntil = day === 0 ? 0 : 7 - day;
+    return Array.from({ length: n }, (_, i) => {
+      const d = new Date(today);
+      d.setDate(today.getDate() + daysUntil + i * 7);
+      return d.toISOString().split("T")[0];
+    });
+  };
+
+  // Smart auto-assign: minimize repeat pairings, prioritize most-overdue members
+  const smartAutoAssign = (sundays: string[]): { date: string; memberIds: number[]; memberNames: string[] }[] => {
+    if (activeUsers.length < 3) return [];
+    const pairCount = new Map<string, number>();
+    const lastAssignedLocal = new Map<number, string>();
+
+    for (const rot of rotations ?? []) {
+      const ids = rot.members.map(m => m.userId);
+      for (const id of ids) {
+        const ex = lastAssignedLocal.get(id);
+        if (!ex || rot.date > ex) lastAssignedLocal.set(id, rot.date);
+      }
+      for (let i = 0; i < ids.length; i++) {
+        for (let j = i + 1; j < ids.length; j++) {
+          const key = `${Math.min(ids[i], ids[j])}-${Math.max(ids[i], ids[j])}`;
+          pairCount.set(key, (pairCount.get(key) ?? 0) + 1);
+        }
+      }
+    }
+
+    const existingDates = new Set((rotations ?? []).map(r => r.date));
+    const result: { date: string; memberIds: number[]; memberNames: string[] }[] = [];
+
+    for (const sunday of sundays) {
+      if (existingDates.has(sunday)) continue;
+
+      const sorted = [...activeUsers].sort((a, b) => {
+        const aDate = lastAssignedLocal.get(a.id);
+        const bDate = lastAssignedLocal.get(b.id);
+        if (!aDate && !bDate) return 0;
+        if (!aDate) return -1;
+        if (!bDate) return 1;
+        return aDate < bDate ? -1 : 1;
+      });
+
+      const poolSize = Math.min(sorted.length, Math.max(6, Math.ceil(sorted.length * 0.65)));
+      const pool = sorted.slice(0, poolSize);
+      let bestTriple: number[] | null = null;
+      let bestScore = Infinity;
+
+      for (let i = 0; i < pool.length; i++) {
+        for (let j = i + 1; j < pool.length; j++) {
+          for (let k = j + 1; k < pool.length; k++) {
+            const ids = [pool[i].id, pool[j].id, pool[k].id];
+            const pScore =
+              (pairCount.get(`${Math.min(ids[0], ids[1])}-${Math.max(ids[0], ids[1])}`) ?? 0) +
+              (pairCount.get(`${Math.min(ids[0], ids[2])}-${Math.max(ids[0], ids[2])}`) ?? 0) +
+              (pairCount.get(`${Math.min(ids[1], ids[2])}-${Math.max(ids[1], ids[2])}`) ?? 0);
+            const positionPenalty = (i + j + k) / (pool.length * 3);
+            const score = pScore + positionPenalty * 0.5;
+            if (score < bestScore) { bestScore = score; bestTriple = ids; }
+          }
+        }
+      }
+
+      if (bestTriple) {
+        for (let i = 0; i < bestTriple.length; i++) {
+          for (let j = i + 1; j < bestTriple.length; j++) {
+            const key = `${Math.min(bestTriple[i], bestTriple[j])}-${Math.max(bestTriple[i], bestTriple[j])}`;
+            pairCount.set(key, (pairCount.get(key) ?? 0) + 1);
+          }
+          lastAssignedLocal.set(bestTriple[i], sunday);
+        }
+        const names = bestTriple.map(id => {
+          const u = activeUsers.find(u => u.id === id)!;
+          return `${u.firstName} ${u.lastName}`;
+        });
+        result.push({ date: sunday, memberIds: bestTriple, memberNames: names });
+      }
+    }
+    return result;
   };
 
   const search = useSearch();
@@ -213,6 +314,23 @@ export default function Sacrament() {
       toast({ title: "Rotation updated" });
     } catch {
       toast({ title: "Failed to update rotation", variant: "destructive" });
+    }
+  };
+
+  const handleSaveAutoFill = async () => {
+    setIsSavingAutoFill(true);
+    try {
+      for (const pending of autoFillPreview) {
+        await createMutation.mutateAsync({ data: { date: pending.date, memberIds: pending.memberIds } });
+      }
+      queryClient.invalidateQueries({ queryKey: getListSacramentRotationsQueryKey() });
+      setAutoFillOpen(false);
+      setAutoFillPreview([]);
+      toast({ title: `${autoFillPreview.length} rotation${autoFillPreview.length !== 1 ? "s" : ""} created` });
+    } catch {
+      toast({ title: "Failed to save some rotations", variant: "destructive" });
+    } finally {
+      setIsSavingAutoFill(false);
     }
   };
 
@@ -352,19 +470,32 @@ export default function Sacrament() {
         </div>
 
         {isLeader && (
-          <Button
-            data-testid="button-new-rotation"
-            onClick={() => {
-              createForm.reset({
-                date: new Date().toISOString().split("T")[0],
-                memberIds: [],
-              });
-              setIsCreateOpen(true);
-            }}
-          >
-            <Plus className="w-4 h-4 mr-2" />
-            New Rotation
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setAutoFillPreview([]);
+                setAutoFillWeeks(4);
+                setAutoFillOpen(true);
+              }}
+            >
+              <Wand2 className="w-4 h-4 mr-2" />
+              Auto-fill Sundays
+            </Button>
+            <Button
+              data-testid="button-new-rotation"
+              onClick={() => {
+                createForm.reset({
+                  date: new Date().toISOString().split("T")[0],
+                  memberIds: [],
+                });
+                setIsCreateOpen(true);
+              }}
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              New Rotation
+            </Button>
+          </div>
         )}
       </div>
 
@@ -405,9 +536,31 @@ export default function Sacrament() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Date</FormLabel>
-                    <FormControl>
-                      <Input type="date" data-testid="input-create-date" {...field} />
-                    </FormControl>
+                    <div className="flex items-center gap-1">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        className="h-9 w-9 shrink-0"
+                        title="Previous Sunday"
+                        onClick={() => field.onChange(stepToSunday(field.value || new Date().toISOString().split("T")[0], -1))}
+                      >
+                        <ChevronLeft className="w-4 h-4" />
+                      </Button>
+                      <FormControl>
+                        <Input type="date" data-testid="input-create-date" {...field} className="flex-1" />
+                      </FormControl>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        className="h-9 w-9 shrink-0"
+                        title="Next Sunday"
+                        onClick={() => field.onChange(stepToSunday(field.value || new Date().toISOString().split("T")[0], 1))}
+                      >
+                        <ChevronRight className="w-4 h-4" />
+                      </Button>
+                    </div>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -623,6 +776,115 @@ export default function Sacrament() {
           })}
         </div>
       )}
+      {/* Auto-fill Sundays Dialog */}
+      <Dialog open={autoFillOpen} onOpenChange={setAutoFillOpen}>
+        <DialogContent className="sm:max-w-[520px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Wand2 className="w-5 h-5 text-primary" />
+              Auto-fill Sundays
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              Automatically assign 3 members to upcoming Sundays. Members are selected to maximise
+              variety in pairings and prioritise those who haven't been assigned recently.
+            </p>
+
+            <div className="flex items-center gap-3">
+              <label className="text-sm font-medium whitespace-nowrap">Sundays to schedule</label>
+              <div className="flex items-center gap-1">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  className="h-8 w-8"
+                  onClick={() => setAutoFillWeeks(w => Math.max(1, w - 1))}
+                >
+                  <ChevronLeft className="w-3 h-3" />
+                </Button>
+                <Input
+                  type="number"
+                  min={1}
+                  max={52}
+                  value={autoFillWeeks}
+                  onChange={e => setAutoFillWeeks(Math.max(1, Math.min(52, parseInt(e.target.value) || 1)))}
+                  className="w-16 text-center"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  className="h-8 w-8"
+                  onClick={() => setAutoFillWeeks(w => Math.min(52, w + 1))}
+                >
+                  <ChevronRight className="w-3 h-3" />
+                </Button>
+              </div>
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={() => setAutoFillPreview(smartAutoAssign(getUpcomingSundays(autoFillWeeks)))}
+                disabled={activeUsers.length < 3}
+              >
+                <Wand2 className="w-4 h-4 mr-2" />
+                Preview
+              </Button>
+            </div>
+
+            {activeUsers.length < 3 && (
+              <div className="flex items-center gap-2 text-sm text-destructive">
+                <AlertCircle className="w-4 h-4 shrink-0" />
+                At least 3 active members are needed to generate assignments.
+              </div>
+            )}
+
+            {autoFillPreview.length > 0 && (
+              <div className="rounded-lg border border-border overflow-hidden">
+                <div className="bg-muted/50 px-3 py-2 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                  Preview — {autoFillPreview.length} rotation{autoFillPreview.length !== 1 ? "s" : ""} to create
+                </div>
+                <ul className="divide-y divide-border max-h-64 overflow-y-auto">
+                  {autoFillPreview.map(item => (
+                    <li key={item.date} className="flex items-start gap-3 px-3 py-2.5">
+                      <span className="text-sm font-medium text-foreground w-32 shrink-0">
+                        {format(parseISO(item.date), "MMM d, yyyy")}
+                      </span>
+                      <span className="text-sm text-muted-foreground">
+                        {item.memberNames.join(" · ")}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {autoFillPreview.length === 0 && activeUsers.length >= 3 && (
+              <p className="text-sm text-muted-foreground text-center py-4 border border-dashed border-border rounded-lg">
+                Click <span className="font-medium">Preview</span> to generate assignments.
+              </p>
+            )}
+          </div>
+
+          <DialogFooter className="pt-2">
+            <Button type="button" variant="outline" onClick={() => setAutoFillOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              disabled={autoFillPreview.length === 0 || isSavingAutoFill}
+              onClick={handleSaveAutoFill}
+            >
+              {isSavingAutoFill
+                ? "Saving..."
+                : autoFillPreview.length > 0
+                ? `Save ${autoFillPreview.length} Rotation${autoFillPreview.length !== 1 ? "s" : ""}`
+                : "Save Rotations"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -503,7 +503,7 @@ export default function Sacrament() {
 
       {/* Create / Upsert Dialog */}
       <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-        <DialogContent className="sm:max-w-[500px]">
+        <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{existingForDate ? "Edit Rotation" : "New Rotation"}</DialogTitle>
           </DialogHeader>
@@ -591,7 +591,7 @@ export default function Sacrament() {
 
       {/* Edit Dialog */}
       <Dialog open={editRotationId !== null} onOpenChange={(open) => { if (!open) setEditRotationId(null); }}>
-        <DialogContent className="sm:max-w-[500px]">
+        <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Edit Rotation</DialogTitle>
           </DialogHeader>

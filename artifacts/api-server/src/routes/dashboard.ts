@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { eq, and, gte, sql } from "drizzle-orm";
+import { eq, and, gte, lte, sql } from "drizzle-orm";
 import {
   db,
   scheduledActivitiesTable,
@@ -154,6 +154,21 @@ router.get("/dashboard", requireAuth, async (req, res): Promise<void> => {
       eq(substitutionRequestsTable.status, "pending")
     ));
 
+  // My lessons in the next 30 days (separate query — not limited by the display limit)
+  const in30Days = new Date();
+  in30Days.setDate(in30Days.getDate() + 30);
+  const cutoff = in30Days.toISOString().split("T")[0];
+
+  const myLessons30 = await db
+    .select({ id: lessonsTable.id })
+    .from(lessonsTable)
+    .where(and(
+      eq(lessonsTable.groupId, currentUser.groupId),
+      eq(lessonsTable.instructorId, currentUser.id),
+      gte(lessonsTable.date, today),
+      lte(lessonsTable.date, cutoff)
+    ));
+
   // My assignments
   const myActivityIds = upcomingActivitiesRaw
     .filter((a) => a.personInChargeId === currentUser.id || a.treatsAssigneeId === currentUser.id)
@@ -163,9 +178,7 @@ router.get("/dashboard", requireAuth, async (req, res): Promise<void> => {
     .filter((r) => r.members.some((m) => m.userId === currentUser.id))
     .map((r) => r.id);
 
-  const myLessonIds = upcomingLessonsRaw
-    .filter((l) => l.instructorId === currentUser.id)
-    .map((l) => l.id);
+  const myLessonIds = myLessons30.map((l) => l.id);
 
   res.json({
     upcomingActivities,

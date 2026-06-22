@@ -139,7 +139,7 @@ export default function Lessons() {
     query: { queryKey: getListUsersQueryKey() }
   });
 
-  const leaders = users?.filter(u => u.status === "active" && (u.role === "leader" || u.role === "presidency")) ?? [];
+  const leaders = users?.filter(u => u.status === "active" && u.role === "leader") ?? [];
   const nonLeaders = users?.filter(u => u.status === "active" && u.role !== "leader") ?? [];
 
   const createMutation = useCreateLesson();

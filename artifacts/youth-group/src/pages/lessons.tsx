@@ -494,7 +494,7 @@ export default function Lessons() {
               <CardHeader className="flex flex-row justify-between items-start pb-2">
                 <div>
                   <div className="text-sm text-secondary font-medium mb-1">
-                    {format(new Date(item.date), "EEEE, MMMM do, yyyy")}
+                    {format(parseISO(item.date), "EEEE, MMMM do, yyyy")}
                   </div>
                   <CardTitle>{item.title}</CardTitle>
                 </div>

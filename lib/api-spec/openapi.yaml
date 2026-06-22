@@ -634,6 +634,25 @@ paths:
               schema:
                 $ref: "#/components/schemas/SubstitutionRequest"
 
+  /substitution-requests/{id}/accept:
+    post:
+      operationId: acceptSubstitutionRequest
+      tags: [substitutions]
+      summary: Accept a substitution request — caller replaces the requester in the rotation
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Updated request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SubstitutionRequest"
+
   # DASHBOARD
   /dashboard:
     get:

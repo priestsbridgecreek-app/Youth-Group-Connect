@@ -2361,6 +2361,76 @@ export const useUpdateSubstitutionRequest = <TError = ErrorType<unknown>,
       return useMutation(getUpdateSubstitutionRequestMutationOptions(options));
     }
 
+export const getAcceptSubstitutionRequestUrl = (id: number,) => {
+
+
+
+
+  return `/api/substitution-requests/${id}/accept`
+}
+
+/**
+ * @summary Accept a substitution request — caller replaces the requester in the rotation
+ */
+export const acceptSubstitutionRequest = async (id: number, options?: RequestInit): Promise<SubstitutionRequest> => {
+
+  return customFetch<SubstitutionRequest>(getAcceptSubstitutionRequestUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getAcceptSubstitutionRequestMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof acceptSubstitutionRequest>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof acceptSubstitutionRequest>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['acceptSubstitutionRequest'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof acceptSubstitutionRequest>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  acceptSubstitutionRequest(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AcceptSubstitutionRequestMutationResult = NonNullable<Awaited<ReturnType<typeof acceptSubstitutionRequest>>>
+
+    export type AcceptSubstitutionRequestMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Accept a substitution request — caller replaces the requester in the rotation
+ */
+export const useAcceptSubstitutionRequest = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof acceptSubstitutionRequest>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof acceptSubstitutionRequest>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getAcceptSubstitutionRequestMutationOptions(options));
+    }
+
 export const getGetDashboardUrl = () => {
 
 

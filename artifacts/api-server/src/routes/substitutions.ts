@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { eq, and } from "drizzle-orm";
-import { db, substitutionRequestsTable, usersTable, sacramentRotationsTable } from "@workspace/db";
+import { db, substitutionRequestsTable, usersTable, sacramentRotationsTable, sacramentRotationMembersTable } from "@workspace/db";
 import { CreateSubstitutionRequestBody, UpdateSubstitutionRequestBody } from "@workspace/api-zod";
 import { requireAuth } from "../middlewares/auth";
 
@@ -95,6 +95,49 @@ router.patch("/substitution-requests/:id", requireAuth, async (req, res): Promis
   await db.update(substitutionRequestsTable)
     .set({ status: parsed.data.status })
     .where(and(eq(substitutionRequestsTable.id, id), eq(substitutionRequestsTable.groupId, currentUser.groupId)));
+
+  const all = await getRequestsWithDetails(currentUser.groupId);
+  const result = all.find((r) => r.id === id);
+  res.json(result);
+});
+
+router.post("/substitution-requests/:id/accept", requireAuth, async (req, res): Promise<void> => {
+  const currentUser = (req as any).currentUser;
+  const raw = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+  const id = parseInt(raw, 10);
+
+  const [subReq] = await db
+    .select()
+    .from(substitutionRequestsTable)
+    .where(and(
+      eq(substitutionRequestsTable.id, id),
+      eq(substitutionRequestsTable.groupId, currentUser.groupId),
+      eq(substitutionRequestsTable.status, "pending")
+    ));
+
+  if (!subReq) {
+    res.status(404).json({ error: "Request not found or already handled" });
+    return;
+  }
+
+  if (subReq.requesterId === currentUser.id) {
+    res.status(400).json({ error: "Cannot accept your own substitution request" });
+    return;
+  }
+
+  // Swap the requester out of the rotation — replace with the accepting user
+  await db
+    .update(sacramentRotationMembersTable)
+    .set({ userId: currentUser.id })
+    .where(and(
+      eq(sacramentRotationMembersTable.rotationId, subReq.rotationId),
+      eq(sacramentRotationMembersTable.userId, subReq.requesterId)
+    ));
+
+  await db
+    .update(substitutionRequestsTable)
+    .set({ status: "resolved" })
+    .where(eq(substitutionRequestsTable.id, id));
 
   const all = await getRequestsWithDetails(currentUser.groupId);
   const result = all.find((r) => r.id === id);

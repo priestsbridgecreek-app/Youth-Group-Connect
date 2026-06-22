@@ -597,6 +597,26 @@ export const UpdateSubstitutionRequestResponse = zod.object({
 
 
 /**
+ * @summary Accept a substitution request — caller replaces the requester in the rotation
+ */
+export const AcceptSubstitutionRequestParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const AcceptSubstitutionRequestResponse = zod.object({
+  "id": zod.number(),
+  "rotationId": zod.number(),
+  "rotationDate": zod.string().optional(),
+  "requesterId": zod.number(),
+  "requesterName": zod.string().optional(),
+  "reason": zod.string().nullish(),
+  "status": zod.enum(['pending', 'approved', 'denied', 'resolved']),
+  "groupId": zod.number(),
+  "createdAt": zod.string().optional()
+})
+
+
+/**
  * @summary Get dashboard summary for current group
  */
 export const GetDashboardResponse = zod.object({

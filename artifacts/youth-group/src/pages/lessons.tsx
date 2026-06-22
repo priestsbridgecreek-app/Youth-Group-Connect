@@ -9,7 +9,7 @@ import {
   useListUsers, getListUsersQueryKey
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
@@ -19,10 +19,10 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { BookOpen, Plus, Trash2 } from "lucide-react";
+import { BookOpen, Plus, Trash2, Wand2, ChevronLeft, ChevronRight } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { format } from "date-fns";
+import { format, parseISO } from "date-fns";
 
 const lessonSchema = z.object({
   date: z.string().min(1, "Date is required"),
@@ -130,6 +130,11 @@ export default function Lessons() {
   const queryClient = useQueryClient();
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
+  const [autoFillOpen, setAutoFillOpen] = useState(false);
+  const [autoFillWeeks, setAutoFillWeeks] = useState(4);
+  const [autoFillPreview, setAutoFillPreview] = useState<string[]>([]);
+  const [autoFillGenerated, setAutoFillGenerated] = useState(false);
+  const [isSavingAutoFill, setIsSavingAutoFill] = useState(false);
 
   const { data: lessons, isLoading } = useListLessons(undefined, {
     query: { queryKey: getListLessonsQueryKey() }
@@ -225,6 +230,43 @@ export default function Lessons() {
 
   const isLeader = user?.role === "presidency" || user?.role === "leader";
 
+  const getUpcomingSundays = (n: number): string[] => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const day = today.getDay();
+    const daysUntil = day === 0 ? 0 : 7 - day;
+    return Array.from({ length: n }, (_, i) => {
+      const d = new Date(today);
+      d.setDate(today.getDate() + daysUntil + i * 7);
+      return d.toISOString().split("T")[0];
+    });
+  };
+
+  const generateAutoFillPreview = () => {
+    const existingDates = new Set((lessons ?? []).map(l => l.date));
+    const sundays = getUpcomingSundays(autoFillWeeks);
+    setAutoFillPreview(sundays.filter(d => !existingDates.has(d)));
+    setAutoFillGenerated(true);
+  };
+
+  const handleSaveAutoFill = async () => {
+    setIsSavingAutoFill(true);
+    try {
+      for (const date of autoFillPreview) {
+        await createMutation.mutateAsync({ data: { date, title: "TBD", topic: "TBD" } });
+      }
+      queryClient.invalidateQueries({ queryKey: getListLessonsQueryKey() });
+      setAutoFillOpen(false);
+      setAutoFillPreview([]);
+      setAutoFillGenerated(false);
+      toast({ title: `${autoFillPreview.length} lesson${autoFillPreview.length !== 1 ? "s" : ""} scheduled` });
+    } catch {
+      toast({ title: "Failed to save some lessons", variant: "destructive" });
+    } finally {
+      setIsSavingAutoFill(false);
+    }
+  };
+
   const search = useSearch();
   const mineOnly = new URLSearchParams(search).get("mine") === "true";
   const fullName = user ? `${user.firstName} ${user.lastName}` : "";
@@ -244,7 +286,15 @@ export default function Lessons() {
         </div>
 
         {isLeader && (
-          <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              onClick={() => { setAutoFillOpen(true); setAutoFillPreview([]); setAutoFillGenerated(false); }}
+            >
+              <Wand2 className="w-4 h-4 mr-2" />
+              Auto-fill Sundays
+            </Button>
+            <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
             <DialogTrigger asChild>
               <Button className="bg-secondary hover:bg-secondary/90 text-secondary-foreground">
                 <Plus className="w-4 h-4 mr-2" />
@@ -268,8 +318,117 @@ export default function Lessons() {
               </Form>
             </DialogContent>
           </Dialog>
+          </div>
         )}
       </div>
+
+      {/* Auto-fill dialog */}
+      <Dialog open={autoFillOpen} onOpenChange={(open) => { setAutoFillOpen(open); if (!open) { setAutoFillPreview([]); setAutoFillGenerated(false); } }}>
+        <DialogContent className="sm:max-w-[520px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Wand2 className="w-5 h-5 text-secondary" />
+              Auto-fill Sundays
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              Create placeholder lesson entries for upcoming Sundays. Each will be saved as "TBD" — click any entry afterwards to fill in the details.
+            </p>
+
+            <div className="flex items-center gap-3">
+              <label className="text-sm font-medium whitespace-nowrap">Sundays to schedule</label>
+              <div className="flex items-center gap-1">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  className="h-8 w-8"
+                  onClick={() => { setAutoFillWeeks(w => Math.max(1, w - 1)); setAutoFillGenerated(false); }}
+                >
+                  <ChevronLeft className="w-3 h-3" />
+                </Button>
+                <span className="w-10 text-center text-sm font-semibold tabular-nums select-none">
+                  {autoFillWeeks}
+                </span>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  className="h-8 w-8"
+                  onClick={() => { setAutoFillWeeks(w => Math.min(52, w + 1)); setAutoFillGenerated(false); }}
+                >
+                  <ChevronRight className="w-3 h-3" />
+                </Button>
+              </div>
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={generateAutoFillPreview}
+              >
+                <Wand2 className="w-4 h-4 mr-2" />
+                Preview
+              </Button>
+            </div>
+
+            {autoFillPreview.length > 0 && (
+              <div className="rounded-lg border border-border overflow-hidden">
+                <div className="bg-muted/50 px-3 py-2 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                  Preview — {autoFillPreview.length} lesson{autoFillPreview.length !== 1 ? "s" : ""} to create
+                </div>
+                <ul className="divide-y divide-border max-h-64 overflow-y-auto">
+                  {autoFillPreview.map(date => (
+                    <li key={date} className="px-3 py-2.5 text-sm font-medium text-foreground">
+                      {format(parseISO(date), "EEEE, MMMM d, yyyy")}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {autoFillPreview.length === 0 && autoFillGenerated && (
+              <div className="text-sm text-center py-4 border border-dashed border-border rounded-lg px-4">
+                <p className="text-muted-foreground">
+                  All {autoFillWeeks} upcoming Sundays are already scheduled.{" "}
+                  <button
+                    type="button"
+                    className="underline font-medium text-foreground hover:text-secondary"
+                    onClick={() => { setAutoFillWeeks(w => w + 4); setAutoFillGenerated(false); }}
+                  >
+                    Try {autoFillWeeks + 4} weeks instead
+                  </button>
+                </p>
+              </div>
+            )}
+
+            {!autoFillGenerated && (
+              <div className="text-sm text-center py-4 border border-dashed border-border rounded-lg px-4">
+                <p className="text-muted-foreground">
+                  Click <span className="font-medium text-foreground">Preview</span> to see which Sundays will be added.
+                </p>
+              </div>
+            )}
+          </div>
+
+          <DialogFooter className="pt-2">
+            <Button type="button" variant="outline" onClick={() => setAutoFillOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              disabled={autoFillPreview.length === 0 || isSavingAutoFill}
+              onClick={handleSaveAutoFill}
+            >
+              {isSavingAutoFill
+                ? "Saving…"
+                : autoFillPreview.length > 0
+                ? `Save ${autoFillPreview.length} Lesson${autoFillPreview.length !== 1 ? "s" : ""}`
+                : "Save Lessons"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Edit dialog */}
       <Dialog open={editingId !== null} onOpenChange={(open) => { if (!open) setEditingId(null); }}>

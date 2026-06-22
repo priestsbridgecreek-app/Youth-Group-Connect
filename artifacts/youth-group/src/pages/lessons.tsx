@@ -19,7 +19,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { BookOpen, Plus, Trash2, Wand2, ChevronLeft, ChevronRight } from "lucide-react";
+import { BookOpen, Plus, Trash2, Wand2, ChevronLeft, ChevronRight, X } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { format, parseISO } from "date-fns";
@@ -29,19 +29,118 @@ const lessonSchema = z.object({
   title: z.string().min(1, "Lesson is required"),
   topic: z.string().default(""),
   instructorId: z.coerce.number().optional().nullable(),
-  assistingId: z.coerce.number().optional().nullable(),
-  goalSharingId: z.coerce.number().optional().nullable(),
+  assistingIds: z.array(z.number()).default([]),
+  goalSharingIds: z.array(z.number()).default([]),
   notes: z.string().optional(),
 });
 
 type LessonForm = z.infer<typeof lessonSchema>;
+type User = { id: number; firstName: string; lastName: string };
 
 const NONE = "__none__";
 
+// Controlled multi-user dropdown with + button to add slots and × to remove.
+// `extraSlots` tracks empty placeholder slots not yet assigned to a user.
+function MultiUserSelect({
+  label,
+  ids,
+  users,
+  onChange,
+}: {
+  label: string;
+  ids: number[];
+  users: User[];
+  onChange: (ids: number[]) => void;
+}) {
+  const [extraSlots, setExtraSlots] = useState(0);
+
+  // One empty slot always shown if ids is empty and no extras added
+  const filledSlots: (number | null)[] = ids.length === 0 && extraSlots === 0
+    ? [null]
+    : [...ids, ...Array<null>(extraSlots).fill(null)];
+
+  const handleChange = (index: number, val: string) => {
+    if (index < ids.length) {
+      // Changing a filled slot
+      const next = [...ids];
+      if (val === NONE) {
+        next.splice(index, 1);
+      } else {
+        next[index] = parseInt(val);
+      }
+      onChange(next);
+    } else {
+      // Filling an extra (empty) slot
+      if (val !== NONE) {
+        onChange([...ids, parseInt(val)]);
+        setExtraSlots(n => Math.max(0, n - 1));
+      }
+    }
+  };
+
+  const handleRemove = (index: number) => {
+    if (index < ids.length) {
+      onChange(ids.filter((_, i) => i !== index));
+    } else {
+      setExtraSlots(n => Math.max(0, n - 1));
+    }
+  };
+
+  const canRemove = filledSlots.length > 1 || (filledSlots.length === 1 && filledSlots[0] !== null);
+
+  return (
+    <div className="space-y-2">
+      <div className="flex items-center justify-between">
+        <span className="text-sm font-medium leading-none">{label}</span>
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          className="h-6 w-6 rounded-full border border-border text-muted-foreground hover:text-secondary hover:border-secondary"
+          onClick={() => setExtraSlots(n => n + 1)}
+        >
+          <Plus className="w-3 h-3" />
+        </Button>
+      </div>
+      {filledSlots.map((slotId, index) => (
+        <div key={index} className="flex items-center gap-1">
+          <Select
+            value={slotId != null ? slotId.toString() : NONE}
+            onValueChange={(val) => handleChange(index, val)}
+          >
+            <SelectTrigger className="flex-1">
+              <SelectValue placeholder="Select member" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value={NONE}>None</SelectItem>
+              {users.map(u => (
+                <SelectItem key={u.id} value={u.id.toString()}>
+                  {u.firstName} {u.lastName}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          {canRemove && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 shrink-0 text-muted-foreground hover:text-destructive"
+              onClick={() => handleRemove(index)}
+            >
+              <X className="w-3 h-3" />
+            </Button>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function LessonFormFields({ form, leaders, nonLeaders }: {
   form: ReturnType<typeof useForm<LessonForm>>;
-  leaders: { id: number; firstName: string; lastName: string }[];
-  nonLeaders: { id: number; firstName: string; lastName: string }[];
+  leaders: User[];
+  nonLeaders: User[];
 }) {
   return (
     <div className="space-y-4">
@@ -66,7 +165,9 @@ function LessonFormFields({ form, leaders, nonLeaders }: {
             onValueChange={(val) => field.onChange(val === NONE ? null : parseInt(val))}
             value={field.value != null ? field.value.toString() : NONE}
           >
-            <FormControl><SelectTrigger><SelectValue placeholder="Select teacher" /></SelectTrigger></FormControl>
+            <FormControl>
+              <SelectTrigger><SelectValue placeholder="Select teacher" /></SelectTrigger>
+            </FormControl>
             <SelectContent>
               <SelectItem value={NONE}>None (TBD)</SelectItem>
               {leaders.map(u => (
@@ -77,46 +178,37 @@ function LessonFormFields({ form, leaders, nonLeaders }: {
           <FormMessage />
         </FormItem>
       )} />
-      <FormField control={form.control} name="assistingId" render={({ field }) => (
+
+      <FormField control={form.control} name="assistingIds" render={({ field }) => (
         <FormItem>
-          <FormLabel>Assisting</FormLabel>
-          <Select
-            onValueChange={(val) => field.onChange(val === NONE ? null : parseInt(val))}
-            value={field.value != null ? field.value.toString() : NONE}
-          >
-            <FormControl><SelectTrigger><SelectValue placeholder="Select member" /></SelectTrigger></FormControl>
-            <SelectContent>
-              <SelectItem value={NONE}>None</SelectItem>
-              {nonLeaders.map(u => (
-                <SelectItem key={u.id} value={u.id.toString()}>{u.firstName} {u.lastName}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <MultiUserSelect
+            label="Assisting"
+            ids={field.value ?? []}
+            users={nonLeaders}
+            onChange={field.onChange}
+          />
           <FormMessage />
         </FormItem>
       )} />
-      <FormField control={form.control} name="goalSharingId" render={({ field }) => (
+
+      <FormField control={form.control} name="goalSharingIds" render={({ field }) => (
         <FormItem>
-          <FormLabel>Goal Sharing</FormLabel>
-          <Select
-            onValueChange={(val) => field.onChange(val === NONE ? null : parseInt(val))}
-            value={field.value != null ? field.value.toString() : NONE}
-          >
-            <FormControl><SelectTrigger><SelectValue placeholder="Select member" /></SelectTrigger></FormControl>
-            <SelectContent>
-              <SelectItem value={NONE}>None</SelectItem>
-              {nonLeaders.map(u => (
-                <SelectItem key={u.id} value={u.id.toString()}>{u.firstName} {u.lastName}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <MultiUserSelect
+            label="Goal Sharing"
+            ids={field.value ?? []}
+            users={nonLeaders}
+            onChange={field.onChange}
+          />
           <FormMessage />
         </FormItem>
       )} />
+
       <FormField control={form.control} name="notes" render={({ field }) => (
         <FormItem>
           <FormLabel>Notes</FormLabel>
-          <FormControl><Textarea placeholder="Optional" className="min-h-[80px]" {...field} /></FormControl>
+          <FormControl>
+            <Textarea placeholder="Optional" className="min-h-[80px]" {...field} />
+          </FormControl>
           <FormMessage />
         </FormItem>
       )} />
@@ -139,10 +231,7 @@ export default function Lessons() {
   const { data: lessons, isLoading } = useListLessons(undefined, {
     query: { queryKey: getListLessonsQueryKey() }
   });
-
-  const { data: users } = useListUsers({
-    query: { queryKey: getListUsersQueryKey() }
-  });
+  const { data: users } = useListUsers({ query: { queryKey: getListUsersQueryKey() } });
 
   const leaders = users?.filter(u => u.status === "active" && u.role === "leader") ?? [];
   const nonLeaders = users?.filter(u => u.status === "active" && u.role !== "leader") ?? [];
@@ -158,8 +247,8 @@ export default function Lessons() {
       title: "",
       topic: "",
       instructorId: null,
-      assistingId: null,
-      goalSharingId: null,
+      assistingIds: [],
+      goalSharingIds: [],
       notes: "",
     },
   });
@@ -171,8 +260,8 @@ export default function Lessons() {
       title: "",
       topic: "",
       instructorId: null,
-      assistingId: null,
-      goalSharingId: null,
+      assistingIds: [],
+      goalSharingIds: [],
       notes: "",
     },
   });
@@ -185,8 +274,8 @@ export default function Lessons() {
       title: lesson.title,
       topic: lesson.topic ?? "",
       instructorId: lesson.instructorId ?? null,
-      assistingId: lesson.assistingId ?? null,
-      goalSharingId: lesson.goalSharingId ?? null,
+      assistingIds: lesson.assistingIds ?? [],
+      goalSharingIds: lesson.goalSharingIds ?? [],
       notes: lesson.notes ?? "",
     });
     setEditingId(lesson.id);
@@ -295,35 +384,38 @@ export default function Lessons() {
               Auto-fill Sundays
             </Button>
             <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-            <DialogTrigger asChild>
-              <Button className="bg-secondary hover:bg-secondary/90 text-secondary-foreground">
-                <Plus className="w-4 h-4 mr-2" />
-                Schedule Lesson
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle>Schedule a Lesson</DialogTitle>
-              </DialogHeader>
-              <Form {...createForm}>
-                <form onSubmit={createForm.handleSubmit(onCreateSubmit)}>
-                  <LessonFormFields form={createForm} leaders={leaders} nonLeaders={nonLeaders} />
-                  <DialogFooter className="pt-6">
-                    <Button type="button" variant="outline" onClick={() => setIsCreateOpen(false)}>Cancel</Button>
-                    <Button type="submit" disabled={createMutation.isPending}>
-                      {createMutation.isPending ? "Scheduling…" : "Schedule"}
-                    </Button>
-                  </DialogFooter>
-                </form>
-              </Form>
-            </DialogContent>
-          </Dialog>
+              <DialogTrigger asChild>
+                <Button className="bg-secondary hover:bg-secondary/90 text-secondary-foreground">
+                  <Plus className="w-4 h-4 mr-2" />
+                  Schedule Lesson
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle>Schedule a Lesson</DialogTitle>
+                </DialogHeader>
+                <Form {...createForm}>
+                  <form onSubmit={createForm.handleSubmit(onCreateSubmit)}>
+                    <LessonFormFields form={createForm} leaders={leaders} nonLeaders={nonLeaders} />
+                    <DialogFooter className="pt-6">
+                      <Button type="button" variant="outline" onClick={() => setIsCreateOpen(false)}>Cancel</Button>
+                      <Button type="submit" disabled={createMutation.isPending}>
+                        {createMutation.isPending ? "Scheduling…" : "Schedule"}
+                      </Button>
+                    </DialogFooter>
+                  </form>
+                </Form>
+              </DialogContent>
+            </Dialog>
           </div>
         )}
       </div>
 
       {/* Auto-fill dialog */}
-      <Dialog open={autoFillOpen} onOpenChange={(open) => { setAutoFillOpen(open); if (!open) { setAutoFillPreview([]); setAutoFillGenerated(false); } }}>
+      <Dialog open={autoFillOpen} onOpenChange={(open) => {
+        setAutoFillOpen(open);
+        if (!open) { setAutoFillPreview([]); setAutoFillGenerated(false); }
+      }}>
         <DialogContent className="sm:max-w-[520px]">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
@@ -331,47 +423,27 @@ export default function Lessons() {
               Auto-fill Sundays
             </DialogTitle>
           </DialogHeader>
-
           <div className="space-y-4">
             <p className="text-sm text-muted-foreground">
               Create placeholder lesson entries for upcoming Sundays. Each will be saved as "TBD" — click any entry afterwards to fill in the details.
             </p>
-
             <div className="flex items-center gap-3">
               <label className="text-sm font-medium whitespace-nowrap">Sundays to schedule</label>
               <div className="flex items-center gap-1">
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="icon"
-                  className="h-8 w-8"
-                  onClick={() => { setAutoFillWeeks(w => Math.max(1, w - 1)); setAutoFillGenerated(false); }}
-                >
+                <Button type="button" variant="outline" size="icon" className="h-8 w-8"
+                  onClick={() => { setAutoFillWeeks(w => Math.max(1, w - 1)); setAutoFillGenerated(false); }}>
                   <ChevronLeft className="w-3 h-3" />
                 </Button>
-                <span className="w-10 text-center text-sm font-semibold tabular-nums select-none">
-                  {autoFillWeeks}
-                </span>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="icon"
-                  className="h-8 w-8"
-                  onClick={() => { setAutoFillWeeks(w => Math.min(52, w + 1)); setAutoFillGenerated(false); }}
-                >
+                <span className="w-10 text-center text-sm font-semibold tabular-nums select-none">{autoFillWeeks}</span>
+                <Button type="button" variant="outline" size="icon" className="h-8 w-8"
+                  onClick={() => { setAutoFillWeeks(w => Math.min(52, w + 1)); setAutoFillGenerated(false); }}>
                   <ChevronRight className="w-3 h-3" />
                 </Button>
               </div>
-              <Button
-                type="button"
-                variant="secondary"
-                onClick={generateAutoFillPreview}
-              >
-                <Wand2 className="w-4 h-4 mr-2" />
-                Preview
+              <Button type="button" variant="secondary" onClick={generateAutoFillPreview}>
+                <Wand2 className="w-4 h-4 mr-2" />Preview
               </Button>
             </div>
-
             {autoFillPreview.length > 0 && (
               <div className="rounded-lg border border-border overflow-hidden">
                 <div className="bg-muted/50 px-3 py-2 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
@@ -386,22 +458,17 @@ export default function Lessons() {
                 </ul>
               </div>
             )}
-
             {autoFillPreview.length === 0 && autoFillGenerated && (
               <div className="text-sm text-center py-4 border border-dashed border-border rounded-lg px-4">
                 <p className="text-muted-foreground">
                   All {autoFillWeeks} upcoming Sundays are already scheduled.{" "}
-                  <button
-                    type="button"
-                    className="underline font-medium text-foreground hover:text-secondary"
-                    onClick={() => { setAutoFillWeeks(w => w + 4); setAutoFillGenerated(false); }}
-                  >
+                  <button type="button" className="underline font-medium text-foreground hover:text-secondary"
+                    onClick={() => { setAutoFillWeeks(w => w + 4); setAutoFillGenerated(false); }}>
                     Try {autoFillWeeks + 4} weeks instead
                   </button>
                 </p>
               </div>
             )}
-
             {!autoFillGenerated && (
               <div className="text-sm text-center py-4 border border-dashed border-border rounded-lg px-4">
                 <p className="text-muted-foreground">
@@ -410,18 +477,10 @@ export default function Lessons() {
               </div>
             )}
           </div>
-
           <DialogFooter className="pt-2">
-            <Button type="button" variant="outline" onClick={() => setAutoFillOpen(false)}>
-              Cancel
-            </Button>
-            <Button
-              type="button"
-              disabled={autoFillPreview.length === 0 || isSavingAutoFill}
-              onClick={handleSaveAutoFill}
-            >
-              {isSavingAutoFill
-                ? "Saving…"
+            <Button type="button" variant="outline" onClick={() => setAutoFillOpen(false)}>Cancel</Button>
+            <Button type="button" disabled={autoFillPreview.length === 0 || isSavingAutoFill} onClick={handleSaveAutoFill}>
+              {isSavingAutoFill ? "Saving…"
                 : autoFillPreview.length > 0
                 ? `Save ${autoFillPreview.length} Lesson${autoFillPreview.length !== 1 ? "s" : ""}`
                 : "Save Lessons"}
@@ -430,14 +489,14 @@ export default function Lessons() {
         </DialogContent>
       </Dialog>
 
-      {/* Edit dialog */}
+      {/* Edit dialog — key resets MultiUserSelect internal state when switching lessons */}
       <Dialog open={editingId !== null} onOpenChange={(open) => { if (!open) setEditingId(null); }}>
         <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Edit Lesson</DialogTitle>
           </DialogHeader>
           <Form {...editForm}>
-            <form onSubmit={editForm.handleSubmit(onEditSubmit)}>
+            <form key={editingId ?? "edit"} onSubmit={editForm.handleSubmit(onEditSubmit)}>
               <LessonFormFields form={editForm} leaders={leaders} nonLeaders={nonLeaders} />
               <DialogFooter className="pt-6 flex justify-between">
                 <Button
@@ -447,8 +506,7 @@ export default function Lessons() {
                   onClick={() => editingLesson && handleDelete(editingLesson.id)}
                   disabled={deleteMutation.isPending}
                 >
-                  <Trash2 className="w-4 h-4 mr-2" />
-                  Delete
+                  <Trash2 className="w-4 h-4 mr-2" />Delete
                 </Button>
                 <div className="flex gap-2">
                   <Button type="button" variant="outline" onClick={() => setEditingId(null)}>Cancel</Button>
@@ -480,7 +538,9 @@ export default function Lessons() {
             {mineOnly ? "No upcoming lessons assigned" : "No lessons scheduled"}
           </h3>
           <p className="text-muted-foreground">
-            {mineOnly ? "You have no upcoming lessons assigned to you as instructor." : "The upcoming schedule is empty."}
+            {mineOnly
+              ? "You have no upcoming lessons assigned to you as instructor."
+              : "The upcoming schedule is empty."}
           </p>
         </div>
       ) : (
@@ -504,15 +564,23 @@ export default function Lessons() {
                   {item.instructorName && (
                     <div><span className="font-medium text-foreground">Teacher:</span> {item.instructorName}</div>
                   )}
-                  {item.assistingName && (
-                    <div><span className="font-medium text-foreground">Assisting:</span> {item.assistingName}</div>
+                  {(item.assistingNames ?? []).length > 0 && (
+                    <div>
+                      <span className="font-medium text-foreground">Assisting:</span>{" "}
+                      {(item.assistingNames ?? []).join(", ")}
+                    </div>
                   )}
-                  {item.goalSharingName && (
-                    <div><span className="font-medium text-foreground">Goal Sharing:</span> {item.goalSharingName}</div>
+                  {(item.goalSharingNames ?? []).length > 0 && (
+                    <div>
+                      <span className="font-medium text-foreground">Goal Sharing:</span>{" "}
+                      {(item.goalSharingNames ?? []).join(", ")}
+                    </div>
                   )}
                 </div>
                 <div>
-                  {item.notes && <p><span className="font-medium text-foreground">Notes:</span> {item.notes}</p>}
+                  {item.notes && (
+                    <p><span className="font-medium text-foreground">Notes:</span> {item.notes}</p>
+                  )}
                 </div>
               </CardContent>
             </Card>

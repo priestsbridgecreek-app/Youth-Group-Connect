@@ -14,8 +14,8 @@ async function getLessonsWithDetails(groupId: number, from?: string, to?: string
       title: lessonsTable.title,
       topic: lessonsTable.topic,
       instructorId: lessonsTable.instructorId,
-      assistingId: lessonsTable.assistingId,
-      goalSharingId: lessonsTable.goalSharingId,
+      assistingIds: lessonsTable.assistingIds,
+      goalSharingIds: lessonsTable.goalSharingIds,
       activityId: lessonsTable.activityId,
       notes: lessonsTable.notes,
       groupId: lessonsTable.groupId,
@@ -27,8 +27,8 @@ async function getLessonsWithDetails(groupId: number, from?: string, to?: string
   const allUserIds = new Set<number>();
   results.forEach((r) => {
     if (r.instructorId) allUserIds.add(r.instructorId);
-    if (r.assistingId) allUserIds.add(r.assistingId);
-    if (r.goalSharingId) allUserIds.add(r.goalSharingId);
+    (r.assistingIds ?? []).forEach(id => allUserIds.add(id));
+    (r.goalSharingIds ?? []).forEach(id => allUserIds.add(id));
   });
 
   const userMap: Record<number, string> = {};
@@ -45,23 +45,27 @@ async function getLessonsWithDetails(groupId: number, from?: string, to?: string
     activities.forEach((a) => { activityMap[a.id] = a.title; });
   }
 
-  let filtered = results.map((r) => ({
-    id: r.id,
-    date: r.date,
-    title: r.title,
-    topic: r.topic,
-    instructorId: r.instructorId,
-    instructorName: r.instructorId ? (userMap[r.instructorId] ?? null) : null,
-    assistingId: r.assistingId,
-    assistingName: r.assistingId ? (userMap[r.assistingId] ?? null) : null,
-    goalSharingId: r.goalSharingId,
-    goalSharingName: r.goalSharingId ? (userMap[r.goalSharingId] ?? null) : null,
-    activityId: r.activityId,
-    activityTitle: r.activityId ? (activityMap[r.activityId] ?? null) : null,
-    notes: r.notes,
-    groupId: r.groupId,
-    createdAt: r.createdAt.toISOString(),
-  }));
+  let filtered = results.map((r) => {
+    const aIds = r.assistingIds ?? [];
+    const gIds = r.goalSharingIds ?? [];
+    return {
+      id: r.id,
+      date: r.date,
+      title: r.title,
+      topic: r.topic,
+      instructorId: r.instructorId,
+      instructorName: r.instructorId ? (userMap[r.instructorId] ?? null) : null,
+      assistingIds: aIds,
+      assistingNames: aIds.map(id => userMap[id]).filter(Boolean),
+      goalSharingIds: gIds,
+      goalSharingNames: gIds.map(id => userMap[id]).filter(Boolean),
+      activityId: r.activityId,
+      activityTitle: r.activityId ? (activityMap[r.activityId] ?? null) : null,
+      notes: r.notes,
+      groupId: r.groupId,
+      createdAt: r.createdAt.toISOString(),
+    };
+  });
 
   if (from) filtered = filtered.filter((r) => r.date >= from);
   if (to) filtered = filtered.filter((r) => r.date <= to);
@@ -91,11 +95,13 @@ router.post("/lessons", requireAuth, async (req, res): Promise<void> => {
   }
 
   const [item] = await db.insert(lessonsTable).values({
-    ...parsed.data,
+    date: parsed.data.date,
+    title: parsed.data.title,
+    topic: parsed.data.topic,
     groupId: currentUser.groupId,
     instructorId: parsed.data.instructorId ?? null,
-    assistingId: parsed.data.assistingId ?? null,
-    goalSharingId: parsed.data.goalSharingId ?? null,
+    assistingIds: parsed.data.assistingIds ?? [],
+    goalSharingIds: parsed.data.goalSharingIds ?? [],
     activityId: parsed.data.activityId ?? null,
     notes: parsed.data.notes ?? null,
   }).returning();
@@ -121,8 +127,14 @@ router.patch("/lessons/:id", requireAuth, async (req, res): Promise<void> => {
     return;
   }
 
+  const { assistingIds, goalSharingIds, ...rest } = parsed.data;
+
   await db.update(lessonsTable)
-    .set(parsed.data)
+    .set({
+      ...rest,
+      assistingIds: assistingIds ?? [],
+      goalSharingIds: goalSharingIds ?? [],
+    })
     .where(and(eq(lessonsTable.id, id), eq(lessonsTable.groupId, currentUser.groupId)));
 
   const all = await getLessonsWithDetails(currentUser.groupId);

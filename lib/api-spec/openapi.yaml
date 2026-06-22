@@ -938,14 +938,22 @@ components:
           type: ["integer", "null"]
         instructorName:
           type: ["string", "null"]
-        assistingId:
-          type: ["integer", "null"]
-        assistingName:
-          type: ["string", "null"]
-        goalSharingId:
-          type: ["integer", "null"]
-        goalSharingName:
-          type: ["string", "null"]
+        assistingIds:
+          type: array
+          items:
+            type: integer
+        assistingNames:
+          type: array
+          items:
+            type: string
+        goalSharingIds:
+          type: array
+          items:
+            type: integer
+        goalSharingNames:
+          type: array
+          items:
+            type: string
         activityId:
           type: ["integer", "null"]
         activityTitle:
@@ -969,10 +977,14 @@ components:
           type: string
         instructorId:
           type: ["integer", "null"]
-        assistingId:
-          type: ["integer", "null"]
-        goalSharingId:
-          type: ["integer", "null"]
+        assistingIds:
+          type: array
+          items:
+            type: integer
+        goalSharingIds:
+          type: array
+          items:
+            type: integer
         activityId:
           type: ["integer", "null"]
         notes:
@@ -989,10 +1001,14 @@ components:
           type: string
         instructorId:
           type: ["integer", "null"]
-        assistingId:
-          type: ["integer", "null"]
-        goalSharingId:
-          type: ["integer", "null"]
+        assistingIds:
+          type: array
+          items:
+            type: integer
+        goalSharingIds:
+          type: array
+          items:
+            type: integer
         activityId:
           type: ["integer", "null"]
         notes:

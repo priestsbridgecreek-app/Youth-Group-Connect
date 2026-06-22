@@ -255,14 +255,10 @@ export interface Lesson {
   instructorId?: number | null;
   /** @nullable */
   instructorName?: string | null;
-  /** @nullable */
-  assistingId?: number | null;
-  /** @nullable */
-  assistingName?: string | null;
-  /** @nullable */
-  goalSharingId?: number | null;
-  /** @nullable */
-  goalSharingName?: string | null;
+  assistingIds?: number[];
+  assistingNames?: string[];
+  goalSharingIds?: number[];
+  goalSharingNames?: string[];
   /** @nullable */
   activityId?: number | null;
   /** @nullable */
@@ -279,10 +275,8 @@ export interface LessonInput {
   topic: string;
   /** @nullable */
   instructorId?: number | null;
-  /** @nullable */
-  assistingId?: number | null;
-  /** @nullable */
-  goalSharingId?: number | null;
+  assistingIds?: number[];
+  goalSharingIds?: number[];
   /** @nullable */
   activityId?: number | null;
   /** @nullable */
@@ -295,10 +289,8 @@ export interface LessonUpdate {
   topic?: string;
   /** @nullable */
   instructorId?: number | null;
-  /** @nullable */
-  assistingId?: number | null;
-  /** @nullable */
-  goalSharingId?: number | null;
+  assistingIds?: number[];
+  goalSharingIds?: number[];
   /** @nullable */
   activityId?: number | null;
   /** @nullable */

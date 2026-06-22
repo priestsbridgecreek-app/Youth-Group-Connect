@@ -12,10 +12,8 @@ export interface LessonInput {
   topic: string;
   /** @nullable */
   instructorId?: number | null;
-  /** @nullable */
-  assistingId?: number | null;
-  /** @nullable */
-  goalSharingId?: number | null;
+  assistingIds?: number[];
+  goalSharingIds?: number[];
   /** @nullable */
   activityId?: number | null;
   /** @nullable */

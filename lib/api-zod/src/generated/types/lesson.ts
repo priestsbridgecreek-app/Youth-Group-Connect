@@ -15,14 +15,10 @@ export interface Lesson {
   instructorId?: number | null;
   /** @nullable */
   instructorName?: string | null;
-  /** @nullable */
-  assistingId?: number | null;
-  /** @nullable */
-  assistingName?: string | null;
-  /** @nullable */
-  goalSharingId?: number | null;
-  /** @nullable */
-  goalSharingName?: string | null;
+  assistingIds?: number[];
+  assistingNames?: string[];
+  goalSharingIds?: number[];
+  goalSharingNames?: string[];
   /** @nullable */
   activityId?: number | null;
   /** @nullable */

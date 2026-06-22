@@ -207,7 +207,7 @@ export default function Lessons() {
   const onEditSubmit = async (values: LessonForm) => {
     if (!editingId) return;
     try {
-      await updateMutation.mutateAsync({ lessonId: editingId, data: { ...values, topic: values.title } });
+      await updateMutation.mutateAsync({ id: editingId, data: { ...values, topic: values.title } });
       queryClient.invalidateQueries({ queryKey: getListLessonsQueryKey() });
       setEditingId(null);
       toast({ title: "Lesson updated" });
@@ -219,7 +219,7 @@ export default function Lessons() {
   const handleDelete = async (id: number) => {
     if (!confirm("Delete this lesson?")) return;
     try {
-      await deleteMutation.mutateAsync({ lessonId: id });
+      await deleteMutation.mutateAsync({ id });
       queryClient.invalidateQueries({ queryKey: getListLessonsQueryKey() });
       setEditingId(null);
       toast({ title: "Lesson removed" });

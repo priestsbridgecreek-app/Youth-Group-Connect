@@ -390,7 +390,7 @@ export default function Lessons() {
                   Schedule Lesson
                 </Button>
               </DialogTrigger>
-              <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
+              <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto" onOpenAutoFocus={(e) => e.preventDefault()}>
                 <DialogHeader>
                   <DialogTitle>Schedule a Lesson</DialogTitle>
                 </DialogHeader>
@@ -491,7 +491,7 @@ export default function Lessons() {
 
       {/* Edit dialog — key resets MultiUserSelect internal state when switching lessons */}
       <Dialog open={editingId !== null} onOpenChange={(open) => { if (!open) setEditingId(null); }}>
-        <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
+        <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto" onOpenAutoFocus={(e) => e.preventDefault()}>
           <DialogHeader>
             <DialogTitle>Edit Lesson</DialogTitle>
           </DialogHeader>

@@ -111,7 +111,7 @@ export default function Schedule() {
   const handleDelete = async (id: number) => {
     if (!confirm("Are you sure you want to delete this scheduled activity?")) return;
     try {
-      await deleteMutation.mutateAsync({ scheduledActivityId: id });
+      await deleteMutation.mutateAsync({ id });
       queryClient.invalidateQueries({ queryKey: getListScheduledActivitiesQueryKey() });
       toast({ title: "Activity removed from schedule" });
     } catch (e) {

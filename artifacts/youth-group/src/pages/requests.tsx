@@ -19,7 +19,7 @@ export default function Requests() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const { data: requests, isLoading } = useListSubstitutionRequests(undefined, {
+  const { data: requests, isLoading } = useListSubstitutionRequests({
     query: { queryKey: getListSubstitutionRequestsQueryKey() }
   });
 

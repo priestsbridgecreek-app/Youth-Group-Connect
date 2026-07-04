@@ -28,7 +28,7 @@ import {
 import { SacramentTrayIcon } from "@/components/icons/sacrament-tray";
 
 const navItems = [
-  { label: "Dashboard", href: "/dashboard", icon: Home },
+  { label: "Home", href: "/dashboard", icon: Home },
   { label: "Schedule", href: "/schedule", icon: CalendarDays },
   { label: "Lessons", href: "/lessons", icon: BookOpen },
   { label: "Sacrament", href: "/sacrament", icon: SacramentTrayIcon },

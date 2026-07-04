@@ -74,6 +74,9 @@ export default function Schedule() {
     },
   });
 
+  const watchedActivityId = form.watch("activityId");
+  const selectedActivity = activities?.find(a => a.id.toString() === watchedActivityId?.toString());
+
   const quickActivityForm = useForm<z.infer<typeof quickActivitySchema>>({
     resolver: zodResolver(quickActivitySchema),
     defaultValues: {
@@ -172,7 +175,17 @@ export default function Schedule() {
                           <Plus className="w-3 h-3 mr-1" /> New
                         </Button>
                       </FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value?.toString() || ""}>
+                      <Select
+                        onValueChange={(val) => {
+                          field.onChange(val);
+                          const selected = activities?.find(a => a.id.toString() === val);
+                          if (selected) {
+                            form.setValue("location", selected.suggestedLocation ?? "");
+                            form.setValue("equipment", selected.equipmentNeeded ?? "");
+                          }
+                        }}
+                        value={field.value?.toString() || ""}
+                      >
                         <FormControl><SelectTrigger><SelectValue placeholder="Select an activity" /></SelectTrigger></FormControl>
                         <SelectContent>
                           {activities?.map(a => <SelectItem key={a.id} value={a.id.toString()}>{a.title}</SelectItem>)}
@@ -181,6 +194,17 @@ export default function Schedule() {
                       <FormMessage />
                     </FormItem>
                   )} />
+                  {selectedActivity && (
+                    <div className="rounded-lg border border-border bg-muted/30 px-3 py-2.5 space-y-1 text-sm text-muted-foreground">
+                      <div><span className="font-medium text-foreground">Type:</span> {selectedActivity.activityType}</div>
+                      {selectedActivity.costEstimate && (
+                        <div><span className="font-medium text-foreground">Cost Estimate:</span> {selectedActivity.costEstimate}</div>
+                      )}
+                      {selectedActivity.description && (
+                        <div><span className="font-medium text-foreground">Description:</span> {selectedActivity.description}</div>
+                      )}
+                    </div>
+                  )}
                   <div className="grid grid-cols-2 gap-4">
                     <FormField control={form.control} name="personInChargeId" render={({ field }) => (
                       <FormItem>
@@ -217,6 +241,9 @@ export default function Schedule() {
                   </div>
                   <FormField control={form.control} name="location" render={({ field }) => (
                     <FormItem><FormLabel>Location</FormLabel><FormControl><Input placeholder="Optional" {...field} /></FormControl><FormMessage /></FormItem>
+                  )} />
+                  <FormField control={form.control} name="equipment" render={({ field }) => (
+                    <FormItem><FormLabel>Equipment</FormLabel><FormControl><Input placeholder="Optional" {...field} /></FormControl><FormMessage /></FormItem>
                   )} />
                   <FormField control={form.control} name="notes" render={({ field }) => (
                     <FormItem><FormLabel>Notes</FormLabel><FormControl><Textarea placeholder="Optional" className="min-h-[80px]" {...field} /></FormControl><FormMessage /></FormItem>
@@ -312,6 +339,7 @@ export default function Schedule() {
               <CardContent className="grid sm:grid-cols-2 gap-4 text-sm text-muted-foreground">
                 <div className="space-y-1">
                   {item.location && <div><span className="font-medium text-foreground">Location:</span> {item.location}</div>}
+                  {item.equipment && <div><span className="font-medium text-foreground">Equipment:</span> {item.equipment}</div>}
                   {item.personInChargeName && <div><span className="font-medium text-foreground">In charge:</span> {item.personInChargeName}</div>}
                   {item.treatsAssigneeName && <div><span className="font-medium text-foreground">Treats:</span> {item.treatsAssigneeName}</div>}
                 </div>

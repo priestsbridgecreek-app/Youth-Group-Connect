@@ -197,7 +197,7 @@ export default function Schedule() {
                 Schedule Activity
               </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[500px]">
+            <DialogContent className="sm:max-w-[500px]" onOpenAutoFocus={(e) => e.preventDefault()}>
               <DialogHeader>
                 <DialogTitle>Schedule an Activity</DialogTitle>
               </DialogHeader>
@@ -344,7 +344,7 @@ export default function Schedule() {
       </Dialog>
 
       <Dialog open={isEditOpen} onOpenChange={(open) => { setIsEditOpen(open); if (!open) setEditingItem(null); }}>
-        <DialogContent className="sm:max-w-[500px]">
+        <DialogContent className="sm:max-w-[500px]" onOpenAutoFocus={(e) => e.preventDefault()}>
           <DialogHeader>
             <DialogTitle>Edit Scheduled Activity</DialogTitle>
           </DialogHeader>

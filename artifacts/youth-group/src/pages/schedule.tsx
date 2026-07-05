@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/lib/auth";
 import { useSearch, Link } from "wouter";
 import { 
@@ -171,12 +171,21 @@ export default function Schedule() {
 
   const search = useSearch();
   const mineOnly = new URLSearchParams(search).get("mine") === "true";
+  const highlightId = new URLSearchParams(search).get("highlight");
   const fullName = user ? `${user.firstName} ${user.lastName}` : "";
   const displayedScheduled = mineOnly
     ? scheduled?.filter(item =>
         item.personInChargeName === fullName || item.treatsAssigneeName === fullName
       )
     : scheduled;
+
+  useEffect(() => {
+    if (!highlightId || isLoadingScheduled) return;
+    const el = document.getElementById(`scheduled-activity-${highlightId}`);
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+  }, [highlightId, isLoadingScheduled, scheduled]);
 
   return (
     <div className="p-8 max-w-5xl mx-auto space-y-8">
@@ -464,7 +473,13 @@ export default function Schedule() {
       ) : (
         <div className="space-y-4">
           {displayedScheduled?.map(item => (
-            <Card key={item.id} className="hover-elevate border-border">
+            <Card
+              key={item.id}
+              id={`scheduled-activity-${item.id}`}
+              className={`hover-elevate border-border transition-colors ${
+                highlightId === item.id.toString() ? "ring-2 ring-primary border-primary/40" : ""
+              }`}
+            >
               <CardHeader className="flex flex-row justify-between items-start pb-2">
                 <div>
                   <div className="text-sm text-primary font-medium mb-1">

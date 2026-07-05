@@ -110,29 +110,30 @@ export default function Dashboard() {
                 {upcomingActivities.map(activity => {
                   const isAssigned = myAssignments.activities.includes(activity.id);
                   return (
-                    <div 
-                      key={activity.id} 
-                      className={`p-4 rounded-lg border flex flex-col sm:flex-row gap-4 justify-between transition-colors
-                        ${isAssigned ? "bg-primary/5 border-primary/30" : "bg-card border-border"}`}
-                    >
-                      <div>
-                        <div className="font-semibold text-lg flex items-center gap-2">
-                          {activity.activityTitle}
-                          {isAssigned && <Badge variant="default">My Assignment</Badge>}
+                    <Link key={activity.id} href={`/schedule?highlight=${activity.id}`} className="block group">
+                      <div
+                        className={`p-4 rounded-lg border flex flex-col sm:flex-row gap-4 justify-between transition-colors group-hover:shadow-md cursor-pointer
+                          ${isAssigned ? "bg-primary/5 border-primary/30" : "bg-card border-border"}`}
+                      >
+                        <div>
+                          <div className="font-semibold text-lg flex items-center gap-2">
+                            {activity.activityTitle}
+                            {isAssigned && <Badge variant="default">My Assignment</Badge>}
+                          </div>
+                          <div className="text-sm text-muted-foreground mt-1">
+                            {format(new Date(activity.date), "EEEE, MMMM do")}
+                          </div>
                         </div>
-                        <div className="text-sm text-muted-foreground mt-1">
-                          {format(new Date(activity.date), "EEEE, MMMM do")}
+                        <div className="text-sm space-y-1">
+                          {activity.personInChargeName && (
+                            <div><span className="text-muted-foreground">In charge:</span> {activity.personInChargeName}</div>
+                          )}
+                          {activity.treatsAssigneeName && (
+                            <div><span className="text-muted-foreground">Treats:</span> {activity.treatsAssigneeName}</div>
+                          )}
                         </div>
                       </div>
-                      <div className="text-sm space-y-1">
-                        {activity.personInChargeName && (
-                          <div><span className="text-muted-foreground">In charge:</span> {activity.personInChargeName}</div>
-                        )}
-                        {activity.treatsAssigneeName && (
-                          <div><span className="text-muted-foreground">Treats:</span> {activity.treatsAssigneeName}</div>
-                        )}
-                      </div>
-                    </div>
+                    </Link>
                   );
                 })}
               </div>

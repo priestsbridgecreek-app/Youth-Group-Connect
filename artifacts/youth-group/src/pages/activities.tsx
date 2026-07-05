@@ -5,6 +5,7 @@ import {
   useVoteActivity,
   useCreateActivity,
   useUpdateActivity,
+  useDeleteActivity,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
@@ -17,7 +18,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { ChevronUp, ChevronDown, Plus, Library, DollarSign, Pencil, Archive, ArchiveRestore } from "lucide-react";
+import { ChevronUp, ChevronDown, Plus, Library, DollarSign, Pencil, Archive, ArchiveRestore, Trash2 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
@@ -119,6 +120,7 @@ export default function Activities() {
   const voteMutation = useVoteActivity();
   const createMutation = useCreateActivity();
   const updateMutation = useUpdateActivity();
+  const deleteMutation = useDeleteActivity();
 
   const createForm = useForm<ActivityFormValues>({
     resolver: zodResolver(activitySchema),
@@ -187,6 +189,17 @@ export default function Activities() {
       toast({ title: nextArchived ? "Activity archived" : "Activity restored" });
     } catch {
       toast({ title: "Failed to update activity", variant: "destructive" });
+    }
+  };
+
+  const handleDelete = async (activity: NonNullable<typeof activities>[number]) => {
+    if (!confirm(`Permanently delete "${activity.title}"? This cannot be undone.`)) return;
+    try {
+      await deleteMutation.mutateAsync({ activityId: activity.id });
+      invalidateAll();
+      toast({ title: "Activity permanently deleted" });
+    } catch {
+      toast({ title: "Failed to delete activity", variant: "destructive" });
     }
   };
 
@@ -358,6 +371,18 @@ export default function Activities() {
                       >
                         {activity.archived ? <ArchiveRestore className="w-3.5 h-3.5" /> : <Archive className="w-3.5 h-3.5" />}
                       </Button>
+                      {activity.archived && (
+                        <Button
+                          variant="ghost" size="icon"
+                          className="h-7 w-7 text-destructive/70 hover:text-destructive hover:bg-destructive/10"
+                          onClick={() => handleDelete(activity)}
+                          disabled={deleteMutation.isPending}
+                          title="Delete permanently"
+                          data-testid={`button-delete-${activity.id}`}
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </Button>
+                      )}
                     </div>
                   )}
                 </div>

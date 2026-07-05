@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 
 interface UserLike {
@@ -16,18 +17,26 @@ interface UserLike {
   status: string;
   groupName?: string | null;
   accessCode?: string | null;
+  excludeFromSacrament?: boolean;
 }
 
 interface UserProfileCardProps {
   targetUser: UserLike;
   onSaved?: () => void;
   readonlyName?: boolean;
+  viewerCanManageSacramentExclusion?: boolean;
 }
 
-export function UserProfileCard({ targetUser, onSaved, readonlyName = false }: UserProfileCardProps) {
+export function UserProfileCard({
+  targetUser,
+  onSaved,
+  readonlyName = false,
+  viewerCanManageSacramentExclusion = false,
+}: UserProfileCardProps) {
   const { toast } = useToast();
   const updateMutation = useUpdateUser();
   const resetCodeMutation = useResetAccessCode();
+  const [savingExclusion, setSavingExclusion] = useState(false);
 
   const [copied, setCopied] = useState(false);
   const [editing, setEditing] = useState(false);
@@ -135,6 +144,38 @@ export function UserProfileCard({ targetUser, onSaved, readonlyName = false }: U
             <div className="p-3 bg-muted/30 border border-border rounded-md text-foreground font-medium flex items-center justify-between">
               <span>{targetUser.groupName}</span>
               <Badge variant="outline" className="capitalize">{targetUser.role}</Badge>
+            </div>
+          </div>
+        )}
+
+        {viewerCanManageSacramentExclusion && (
+          <div className="space-y-2 pt-4 border-t border-border">
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <Label>Exclude from Sacrament Rotation</Label>
+                <p className="text-sm text-muted-foreground mt-1">
+                  This member will not be assigned or suggested for sacrament blessing rotations.
+                </p>
+              </div>
+              <Switch
+                checked={targetUser.excludeFromSacrament ?? false}
+                disabled={savingExclusion}
+                onCheckedChange={async (checked) => {
+                  setSavingExclusion(true);
+                  try {
+                    await updateMutation.mutateAsync({
+                      userId: targetUser.id,
+                      data: { excludeFromSacrament: checked },
+                    });
+                    onSaved?.();
+                    toast({ title: checked ? "Excluded from sacrament rotation" : "Included in sacrament rotation" });
+                  } catch {
+                    toast({ title: "Failed to update setting", variant: "destructive" });
+                  } finally {
+                    setSavingExclusion(false);
+                  }
+                }}
+              />
             </div>
           </div>
         )}

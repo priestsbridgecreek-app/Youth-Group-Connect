@@ -16,7 +16,7 @@ export default function Settings() {
       </div>
 
       <div className="grid gap-6">
-        <UserProfileCard targetUser={user} onSaved={refetch} />
+        <UserProfileCard targetUser={user} onSaved={refetch} viewerCanManageSacramentExclusion={false} />
 
         <Card className="border-border bg-muted/10">
           <CardHeader>

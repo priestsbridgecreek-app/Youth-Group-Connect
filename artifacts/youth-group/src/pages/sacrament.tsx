@@ -63,7 +63,7 @@ export default function Sacrament() {
     query: { queryKey: getListUsersQueryKey() },
   });
 
-  const activeUsers = users?.filter((u) => u.status === "active" && u.role !== "leader") ?? [];
+  const activeUsers = users?.filter((u) => u.status === "active" && u.role !== "leader" && !u.excludeFromSacrament) ?? [];
 
   // Map each userId to their most-recent rotation date
   const userLastAssigned = useMemo(() => {

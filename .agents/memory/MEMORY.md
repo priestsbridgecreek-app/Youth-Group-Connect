@@ -1,1 +1,2 @@
 - [React Hook Form watch() vs coerce schemas](react-hook-form-watch-coercion.md) — form.watch() returns raw uncoerced values; normalize before comparing to typed data (e.g. numeric IDs).
+- [Role-gated field visibility pattern](role-gated-field-visibility.md) — hide sensitive user fields from members via server-side response stripping, not just UI conditionals.

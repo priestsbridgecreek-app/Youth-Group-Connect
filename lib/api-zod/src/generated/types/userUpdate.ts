@@ -15,4 +15,5 @@ export interface UserUpdate {
   status?: UserUpdateStatus;
   /** @nullable */
   groupId?: number | null;
+  excludeFromSacrament?: boolean;
 }

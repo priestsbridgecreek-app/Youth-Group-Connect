@@ -23,9 +23,9 @@ export default function MemberProfile() {
     },
   });
 
-  const isLeader = currentUser?.role === "leader";
+  const isPresidency = currentUser?.role === "presidency" || currentUser?.role === "leader";
 
-  if (!isLeader) {
+  if (!isPresidency) {
     return (
       <div className="p-8 max-w-3xl mx-auto">
         <p className="text-muted-foreground">You don't have permission to view this page.</p>
@@ -72,7 +72,7 @@ export default function MemberProfile() {
           <Skeleton className="h-64 w-full" />
         </div>
       ) : member ? (
-        <UserProfileCard targetUser={member} onSaved={handleSaved} />
+        <UserProfileCard targetUser={member} onSaved={handleSaved} viewerCanManageSacramentExclusion={isPresidency} />
       ) : (
         <p className="text-muted-foreground">Member not found.</p>
       )}

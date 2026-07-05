@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, timestamp, pgEnum } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, timestamp, pgEnum, boolean } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 
@@ -19,6 +19,7 @@ export const usersTable = pgTable("users", {
   status: statusEnum("status").notNull().default("active"),
   groupId: integer("group_id").notNull().references(() => groupsTable.id),
   accessCode: text("access_code").notNull().unique(),
+  excludeFromSacrament: boolean("exclude_from_sacrament").notNull().default(false),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 

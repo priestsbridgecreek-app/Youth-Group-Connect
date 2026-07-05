@@ -62,6 +62,7 @@ export const ListUsersResponseItem = zod.object({
   "groupName": zod.string(),
   "status": zod.enum(['active', 'inactive', 'archived']),
   "accessCode": zod.string(),
+  "excludeFromSacrament": zod.boolean().optional().describe('Only present for leaders\/presidency viewers. Excludes the member from sacrament rotation assignment.'),
   "createdAt": zod.string().optional()
 })
 export const ListUsersResponse = zod.array(ListUsersResponseItem)
@@ -94,6 +95,7 @@ export const GetUserResponse = zod.object({
   "groupName": zod.string(),
   "status": zod.enum(['active', 'inactive', 'archived']),
   "accessCode": zod.string(),
+  "excludeFromSacrament": zod.boolean().optional().describe('Only present for leaders\/presidency viewers. Excludes the member from sacrament rotation assignment.'),
   "createdAt": zod.string().optional()
 })
 
@@ -110,7 +112,8 @@ export const UpdateUserBody = zod.object({
   "lastName": zod.string().optional(),
   "role": zod.enum(['member', 'presidency', 'leader']).optional(),
   "status": zod.enum(['active', 'inactive', 'archived']).optional(),
-  "groupId": zod.number().nullish()
+  "groupId": zod.number().nullish(),
+  "excludeFromSacrament": zod.boolean().optional()
 })
 
 export const UpdateUserResponse = zod.object({
@@ -122,6 +125,7 @@ export const UpdateUserResponse = zod.object({
   "groupName": zod.string(),
   "status": zod.enum(['active', 'inactive', 'archived']),
   "accessCode": zod.string(),
+  "excludeFromSacrament": zod.boolean().optional().describe('Only present for leaders\/presidency viewers. Excludes the member from sacrament rotation assignment.'),
   "createdAt": zod.string().optional()
 })
 
@@ -146,6 +150,7 @@ export const ResetAccessCodeResponse = zod.object({
   "groupName": zod.string(),
   "status": zod.enum(['active', 'inactive', 'archived']),
   "accessCode": zod.string(),
+  "excludeFromSacrament": zod.boolean().optional().describe('Only present for leaders\/presidency viewers. Excludes the member from sacrament rotation assignment.'),
   "createdAt": zod.string().optional()
 })
 

@@ -14,6 +14,19 @@ function generateAccessCode(firstName: string, lastName: string): string {
   return `${initials}${digits}`;
 }
 
+function isPresidencyOrLeader(role: string): boolean {
+  return role === "presidency" || role === "leader";
+}
+
+function sanitizeUserForViewer<T extends { excludeFromSacrament: boolean }>(
+  user: T,
+  viewerRole: string
+): Omit<T, "excludeFromSacrament"> & { excludeFromSacrament?: boolean } {
+  if (isPresidencyOrLeader(viewerRole)) return user;
+  const { excludeFromSacrament, ...rest } = user;
+  return rest;
+}
+
 async function getUserWithGroup(userId: number) {
   const rows = await db
     .select({
@@ -25,6 +38,7 @@ async function getUserWithGroup(userId: number) {
       groupId: usersTable.groupId,
       groupName: groupsTable.name,
       accessCode: usersTable.accessCode,
+      excludeFromSacrament: usersTable.excludeFromSacrament,
       createdAt: usersTable.createdAt,
     })
     .from(usersTable)
@@ -45,12 +59,13 @@ router.get("/users", requireAuth, async (req, res): Promise<void> => {
       groupId: usersTable.groupId,
       groupName: groupsTable.name,
       accessCode: usersTable.accessCode,
+      excludeFromSacrament: usersTable.excludeFromSacrament,
       createdAt: usersTable.createdAt,
     })
     .from(usersTable)
     .innerJoin(groupsTable, eq(usersTable.groupId, groupsTable.id))
     .where(eq(usersTable.groupId, currentUser.groupId));
-  res.json(rows);
+  res.json(rows.map((r) => sanitizeUserForViewer(r, currentUser.role)));
 });
 
 router.post("/users/invite", requireAuth, async (req, res): Promise<void> => {
@@ -102,7 +117,7 @@ router.get("/users/:userId", requireAuth, async (req, res): Promise<void> => {
     res.status(404).json({ error: "Not found" });
     return;
   }
-  res.json(user);
+  res.json(sanitizeUserForViewer(user, currentUser.role));
 });
 
 router.patch("/users/:userId", requireAuth, async (req, res): Promise<void> => {
@@ -112,9 +127,10 @@ router.patch("/users/:userId", requireAuth, async (req, res): Promise<void> => {
 
   const isSelf = userId === currentUser.id;
   const isLeader = currentUser.role === "leader";
+  const isPresidency = isPresidencyOrLeader(currentUser.role);
 
-  // Anyone can edit their own record; only leaders can edit others
-  if (!isSelf && !isLeader) {
+  // Anyone can edit their own record; leaders/presidency can edit others
+  if (!isSelf && !isPresidency) {
     res.status(403).json({ error: "Forbidden" });
     return;
   }
@@ -127,13 +143,17 @@ router.patch("/users/:userId", requireAuth, async (req, res): Promise<void> => {
 
   const updates: Partial<typeof usersTable.$inferInsert> = {};
   // Name fields — allowed for self or leader
-  if (parsed.data.firstName?.trim()) updates.firstName = parsed.data.firstName.trim();
-  if (parsed.data.lastName?.trim()) updates.lastName = parsed.data.lastName.trim();
+  if ((isSelf || isLeader) && parsed.data.firstName?.trim()) updates.firstName = parsed.data.firstName.trim();
+  if ((isSelf || isLeader) && parsed.data.lastName?.trim()) updates.lastName = parsed.data.lastName.trim();
   // Role/status/group — leaders only
   if (isLeader) {
     if (parsed.data.role) updates.role = parsed.data.role;
     if (parsed.data.status) updates.status = parsed.data.status;
     if (parsed.data.groupId !== undefined) updates.groupId = parsed.data.groupId ?? currentUser.groupId;
+  }
+  // Sacrament rotation exclusion — leaders/presidency only, never the member themselves
+  if (isPresidency && parsed.data.excludeFromSacrament !== undefined) {
+    updates.excludeFromSacrament = parsed.data.excludeFromSacrament;
   }
 
   if (Object.keys(updates).length === 0) {
@@ -143,7 +163,7 @@ router.patch("/users/:userId", requireAuth, async (req, res): Promise<void> => {
 
   await db.update(usersTable).set(updates).where(eq(usersTable.id, userId));
   const user = await getUserWithGroup(userId);
-  res.json(user);
+  res.json(sanitizeUserForViewer(user!, currentUser.role));
 });
 
 router.post("/users/:userId/reset-code", requireAuth, async (req, res): Promise<void> => {

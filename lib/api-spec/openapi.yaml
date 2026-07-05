@@ -731,6 +731,9 @@ components:
           enum: [active, inactive, archived]
         accessCode:
           type: string
+        excludeFromSacrament:
+          type: boolean
+          description: Only present for leaders/presidency viewers. Excludes the member from sacrament rotation assignment.
         createdAt:
           type: string
 
@@ -763,6 +766,8 @@ components:
           enum: [active, inactive, archived]
         groupId:
           type: ["integer", "null"]
+        excludeFromSacrament:
+          type: boolean
 
     ResetCodeInput:
       type: object

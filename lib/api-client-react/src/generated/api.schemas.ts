@@ -69,6 +69,8 @@ export interface User {
   groupName: string;
   status: UserStatus;
   accessCode: string;
+  /** Only present for leaders/presidency viewers. Excludes the member from sacrament rotation assignment. */
+  excludeFromSacrament?: boolean;
   createdAt?: string;
 }
 
@@ -114,6 +116,7 @@ export interface UserUpdate {
   status?: UserUpdateStatus;
   /** @nullable */
   groupId?: number | null;
+  excludeFromSacrament?: boolean;
 }
 
 export interface ResetCodeInput {

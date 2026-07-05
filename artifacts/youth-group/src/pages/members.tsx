@@ -209,8 +209,8 @@ export default function Members() {
           {sortedUsers?.map(member => (
             <Card
               key={member.id}
-              className={`hover-elevate border-border ${member.status === 'archived' ? 'opacity-50' : ''} ${isLeader ? 'cursor-pointer' : ''}`}
-              onClick={isLeader ? () => navigate(`/members/${member.id}`) : undefined}
+              className={`hover-elevate border-border ${member.status === 'archived' ? 'opacity-50' : ''} ${isPresidency ? 'cursor-pointer' : ''}`}
+              onClick={isPresidency ? () => navigate(`/members/${member.id}`) : undefined}
             >
               <CardContent className="p-4 flex justify-between items-center h-full">
                 <div className="space-y-1.5">

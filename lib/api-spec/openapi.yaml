@@ -750,6 +750,8 @@ components:
           enum: [member, presidency, leader]
         customAccessCode:
           type: ["string", "null"]
+        excludeFromSacrament:
+          type: boolean
 
     UserUpdate:
       type: object

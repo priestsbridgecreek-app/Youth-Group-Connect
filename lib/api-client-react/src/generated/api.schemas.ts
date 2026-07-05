@@ -89,6 +89,7 @@ export interface InviteUserInput {
   role?: InviteUserInputRole;
   /** @nullable */
   customAccessCode?: string | null;
+  excludeFromSacrament?: boolean;
 }
 
 export type UserUpdateRole = typeof UserUpdateRole[keyof typeof UserUpdateRole];

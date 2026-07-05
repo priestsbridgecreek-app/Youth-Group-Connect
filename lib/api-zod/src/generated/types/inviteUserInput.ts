@@ -13,4 +13,5 @@ export interface InviteUserInput {
   role?: InviteUserInputRole;
   /** @nullable */
   customAccessCode?: string | null;
+  excludeFromSacrament?: boolean;
 }

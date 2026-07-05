@@ -75,7 +75,8 @@ export const InviteUserBody = zod.object({
   "firstName": zod.string(),
   "lastName": zod.string(),
   "role": zod.enum(['member', 'presidency', 'leader']).optional(),
-  "customAccessCode": zod.string().nullish()
+  "customAccessCode": zod.string().nullish(),
+  "excludeFromSacrament": zod.boolean().optional()
 })
 
 

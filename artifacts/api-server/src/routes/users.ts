@@ -81,7 +81,7 @@ router.post("/users/invite", requireAuth, async (req, res): Promise<void> => {
     return;
   }
 
-  const { firstName, lastName, role, customAccessCode } = parsed.data;
+  const { firstName, lastName, role, customAccessCode, excludeFromSacrament } = parsed.data;
   let accessCode = customAccessCode ?? generateAccessCode(firstName, lastName);
   accessCode = accessCode.toUpperCase();
 
@@ -101,6 +101,7 @@ router.post("/users/invite", requireAuth, async (req, res): Promise<void> => {
     status: "active",
     groupId: currentUser.groupId,
     accessCode,
+    excludeFromSacrament: excludeFromSacrament ?? false,
   }).returning();
 
   const userWithGroup = await getUserWithGroup(newUser.id);

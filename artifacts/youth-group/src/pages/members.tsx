@@ -22,11 +22,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 
 const inviteSchema = z.object({
   firstName: z.string().min(1, "First name is required"),
   lastName: z.string().min(1, "Last name is required"),
   role: z.enum(["member", "presidency", "leader"]),
+  excludeFromSacrament: z.boolean(),
 });
 
 export default function Members() {
@@ -52,6 +55,7 @@ export default function Members() {
       firstName: "",
       lastName: "",
       role: "member",
+      excludeFromSacrament: false,
     },
   });
 
@@ -163,6 +167,21 @@ export default function Members() {
                       </FormItem>
                     )} />
                   )}
+                  <FormField control={form.control} name="excludeFromSacrament" render={({ field }) => (
+                    <FormItem>
+                      <div className="flex items-center justify-between gap-4 pt-2 border-t border-border">
+                        <div>
+                          <Label>Exclude from Sacrament Rotation</Label>
+                          <p className="text-sm text-muted-foreground mt-1">
+                            This member will not be assigned or suggested for sacrament blessing rotations.
+                          </p>
+                        </div>
+                        <FormControl>
+                          <Switch checked={field.value} onCheckedChange={field.onChange} />
+                        </FormControl>
+                      </div>
+                    </FormItem>
+                  )} />
                   <DialogFooter className="pt-4">
                     <Button type="button" variant="outline" onClick={() => setIsInviteOpen(false)}>Cancel</Button>
                     <Button type="submit" disabled={inviteMutation.isPending}>

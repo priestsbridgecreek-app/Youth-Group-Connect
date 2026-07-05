@@ -216,9 +216,27 @@ export default function Sacrament() {
 
   const search = useSearch();
   const mineOnly = new URLSearchParams(search).get("mine") === "true";
-  const displayedRotations = mineOnly
+  const mineFilteredRotations = mineOnly
     ? rotations?.filter(r => r.members.some(m => m.userId === user?.id))
     : rotations;
+
+  const [pastVisibleCount, setPastVisibleCount] = useState(0);
+  const todayStr = new Date().toISOString().split("T")[0];
+
+  const upcomingRotations = useMemo(
+    () => (mineFilteredRotations ?? []).filter(r => r.date >= todayStr).sort((a, b) => a.date.localeCompare(b.date)),
+    [mineFilteredRotations, todayStr]
+  );
+
+  const pastRotationsAll = useMemo(
+    () => (mineFilteredRotations ?? []).filter(r => r.date < todayStr).sort((a, b) => b.date.localeCompare(a.date)),
+    [mineFilteredRotations, todayStr]
+  );
+
+  const visiblePastRotations = pastRotationsAll.slice(0, pastVisibleCount);
+  const hasMorePast = pastVisibleCount < pastRotationsAll.length;
+
+  const displayedRotations = rotations ? [...upcomingRotations, ...visiblePastRotations] : rotations;
 
   const createMutation = useCreateSacramentRotation();
   const updateMutation = useUpdateSacramentRotation();
@@ -684,7 +702,7 @@ export default function Sacrament() {
             <Skeleton key={i} className="h-24" />
           ))}
         </div>
-      ) : displayedRotations?.length === 0 ? (
+      ) : displayedRotations?.length === 0 && pastRotationsAll.length === 0 ? (
         <div className="text-center py-16 bg-card border border-border rounded-xl border-dashed">
           <SacramentTrayIcon className="w-12 h-12 text-muted-foreground/50 mx-auto mb-4" />
           <h3 className="text-xl font-medium text-foreground mb-2">
@@ -696,6 +714,14 @@ export default function Sacrament() {
         </div>
       ) : (
         <div className="flex flex-col gap-4">
+          {upcomingRotations.length === 0 && visiblePastRotations.length === 0 && (
+            <div className="text-center py-10 bg-card border border-border rounded-xl border-dashed">
+              <SacramentTrayIcon className="w-10 h-10 text-muted-foreground/50 mx-auto mb-3" />
+              <p className="text-muted-foreground">
+                {mineOnly ? "You are not assigned to any upcoming rotations." : "No upcoming rotations scheduled."}
+              </p>
+            </div>
+          )}
           {displayedRotations?.map((rotation) => {
             const isAssigned = rotation.members.some((m) => m.userId === user?.id);
             return (
@@ -776,6 +802,17 @@ export default function Sacrament() {
               </Card>
             );
           })}
+          {hasMorePast && (
+            <div className="flex justify-center pt-2">
+              <Button
+                variant="outline"
+                onClick={() => setPastVisibleCount((c) => c + 4)}
+                data-testid="button-show-past-rotations"
+              >
+                Show past 4 entries
+              </Button>
+            </div>
+          )}
         </div>
       )}
       {/* Auto-fill Sundays Dialog */}

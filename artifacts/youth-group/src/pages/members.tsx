@@ -105,6 +105,15 @@ export default function Members() {
   const isPresidency = user?.role === "presidency" || user?.role === "leader";
   const isLeader = user?.role === "leader";
 
+  const roleOrder: Record<string, number> = { leader: 0, presidency: 1, member: 2 };
+  const sortedUsers = users
+    ? [...users].sort((a, b) => {
+        const roleDiff = (roleOrder[a.role] ?? 3) - (roleOrder[b.role] ?? 3);
+        if (roleDiff !== 0) return roleDiff;
+        return `${a.firstName} ${a.lastName}`.localeCompare(`${b.firstName} ${b.lastName}`);
+      })
+    : users;
+
   return (
     <div className="p-8 max-w-5xl mx-auto space-y-8">
       <div className="flex justify-between items-center">
@@ -197,7 +206,7 @@ export default function Members() {
         </div>
       ) : (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {users?.map(member => (
+          {sortedUsers?.map(member => (
             <Card
               key={member.id}
               className={`hover-elevate border-border ${member.status === 'archived' ? 'opacity-50' : ''} ${isLeader ? 'cursor-pointer' : ''}`}

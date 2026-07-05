@@ -714,6 +714,17 @@ export default function Sacrament() {
         </div>
       ) : (
         <div className="flex flex-col gap-4">
+          {hasMorePast && (
+            <div className="flex justify-center pb-2">
+              <Button
+                variant="outline"
+                onClick={() => setPastVisibleCount((c) => c + 4)}
+                data-testid="button-show-past-rotations"
+              >
+                Show past 4 entries
+              </Button>
+            </div>
+          )}
           {upcomingRotations.length === 0 && visiblePastRotations.length === 0 && (
             <div className="text-center py-10 bg-card border border-border rounded-xl border-dashed">
               <SacramentTrayIcon className="w-10 h-10 text-muted-foreground/50 mx-auto mb-3" />
@@ -802,17 +813,6 @@ export default function Sacrament() {
               </Card>
             );
           })}
-          {hasMorePast && (
-            <div className="flex justify-center pt-2">
-              <Button
-                variant="outline"
-                onClick={() => setPastVisibleCount((c) => c + 4)}
-                data-testid="button-show-past-rotations"
-              >
-                Show past 4 entries
-              </Button>
-            </div>
-          )}
         </div>
       )}
       {/* Auto-fill Sundays Dialog */}

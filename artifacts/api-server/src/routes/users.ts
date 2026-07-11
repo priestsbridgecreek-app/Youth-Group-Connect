@@ -167,6 +167,27 @@ router.patch("/users/:userId", requireAuth, async (req, res): Promise<void> => {
   res.json(sanitizeUserForViewer(user!, currentUser.role));
 });
 
+router.delete("/users/:userId", requireAuth, async (req, res): Promise<void> => {
+  const currentUser = (req as any).currentUser;
+  if (currentUser.role !== "leader") {
+    res.status(403).json({ error: "Forbidden" });
+    return;
+  }
+  const raw = Array.isArray(req.params.userId) ? req.params.userId[0] : req.params.userId;
+  const userId = parseInt(raw, 10);
+  if (userId === currentUser.id) {
+    res.status(400).json({ error: "Cannot delete yourself" });
+    return;
+  }
+  const target = await getUserWithGroup(userId);
+  if (!target || target.groupId !== currentUser.groupId) {
+    res.status(404).json({ error: "Not found" });
+    return;
+  }
+  await db.delete(usersTable).where(and(eq(usersTable.id, userId), eq(usersTable.groupId, currentUser.groupId)));
+  res.status(204).send();
+});
+
 router.post("/users/:userId/reset-code", requireAuth, async (req, res): Promise<void> => {
   const currentUser = (req as any).currentUser;
   const raw = Array.isArray(req.params.userId) ? req.params.userId[0] : req.params.userId;

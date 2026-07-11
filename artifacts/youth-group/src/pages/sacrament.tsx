@@ -236,7 +236,7 @@ export default function Sacrament() {
   const visiblePastRotations = pastRotationsAll.slice(0, pastVisibleCount);
   const hasMorePast = pastVisibleCount < pastRotationsAll.length;
 
-  const displayedRotations = rotations ? [...visiblePastRotations, ...upcomingRotations] : rotations;
+  const displayedRotations = rotations ? [...visiblePastRotations.slice().reverse(), ...upcomingRotations] : rotations;
 
   const createMutation = useCreateSacramentRotation();
   const updateMutation = useUpdateSacramentRotation();

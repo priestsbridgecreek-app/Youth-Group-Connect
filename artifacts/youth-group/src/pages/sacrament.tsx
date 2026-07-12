@@ -143,6 +143,24 @@ export default function Sacrament() {
     });
   };
 
+  // Find the next Sunday (from today onward) that has no existing rotation
+  const nextAvailableSunday = (): string => {
+    const existingDates = new Set((rotations ?? []).map(r => r.date));
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const day = today.getDay();
+    // Start from this coming Sunday (or today if today is Sunday)
+    const d = new Date(today);
+    d.setDate(today.getDate() + (day === 0 ? 0 : 7 - day));
+    // Advance week by week until we find one with no rotation
+    for (let i = 0; i < 52; i++) {
+      const dateStr = d.toISOString().split("T")[0];
+      if (!existingDates.has(dateStr)) return dateStr;
+      d.setDate(d.getDate() + 7);
+    }
+    return d.toISOString().split("T")[0];
+  };
+
   // Smart auto-assign: minimize repeat pairings, prioritize most-overdue members
   const smartAutoAssign = (sundays: string[]): { date: string; memberIds: number[]; memberNames: string[] }[] => {
     if (activeUsers.length < 3) return [];
@@ -260,13 +278,6 @@ export default function Sacrament() {
     [rotations, createDate]
   );
 
-  // When the selected date already has a rotation, pre-fill its members
-  useEffect(() => {
-    if (!isCreateOpen) return;
-    if (existingForDate) {
-      createForm.setValue("memberIds", existingForDate.members.map(m => m.userId), { shouldValidate: true });
-    }
-  }, [existingForDate, isCreateOpen]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const editForm = useForm<RotationFormValues>({
     resolver: zodResolver(rotationSchema),
@@ -301,15 +312,10 @@ export default function Sacrament() {
   };
 
   const onCreateSubmit = async (values: RotationFormValues) => {
+    if (existingForDate) return; // Blocked by UI — duplicate date
     try {
-      if (existingForDate) {
-        // Date already has a rotation — update it instead of creating a duplicate
-        await updateMutation.mutateAsync({ id: existingForDate.id, data: values });
-        toast({ title: "Rotation updated" });
-      } else {
-        await createMutation.mutateAsync({ data: values });
-        toast({ title: "Rotation created" });
-      }
+      await createMutation.mutateAsync({ data: values });
+      toast({ title: "Rotation created" });
       queryClient.invalidateQueries({ queryKey: getListSacramentRotationsQueryKey() });
       setIsCreateOpen(false);
       createForm.reset();
@@ -508,7 +514,7 @@ export default function Sacrament() {
               data-testid="button-new-rotation"
               onClick={() => {
                 createForm.reset({
-                  date: new Date().toISOString().split("T")[0],
+                  date: nextAvailableSunday(),
                   memberIds: [],
                 });
                 setIsCreateOpen(true);
@@ -525,14 +531,14 @@ export default function Sacrament() {
       <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
         <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>{existingForDate ? "Edit Rotation" : "New Rotation"}</DialogTitle>
+            <DialogTitle>New Rotation</DialogTitle>
           </DialogHeader>
 
           {existingForDate && (
-            <div className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 dark:bg-amber-950/20 dark:border-amber-900/40 px-3 py-2.5 text-sm text-amber-800 dark:text-amber-300">
-              <AlertCircle className="w-4 h-4 mt-0.5 shrink-0 text-amber-500" />
+            <div className="flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 dark:bg-red-950/20 dark:border-red-900/40 px-3 py-2.5 text-sm text-red-800 dark:text-red-300">
+              <AlertCircle className="w-4 h-4 mt-0.5 shrink-0 text-red-500" />
               <span>
-                A rotation already exists for this date — editing it instead of creating a new one.
+                A rotation already exists for this Sunday. Please close this dialog and edit the existing entry instead.
               </span>
             </div>
           )}
@@ -594,14 +600,10 @@ export default function Sacrament() {
                 </Button>
                 <Button
                   type="submit"
-                  disabled={createMutation.isPending || updateMutation.isPending}
+                  disabled={createMutation.isPending || !!existingForDate}
                   data-testid="button-save-rotation"
                 >
-                  {createMutation.isPending || updateMutation.isPending
-                    ? "Saving..."
-                    : existingForDate
-                    ? "Update Rotation"
-                    : "Save Rotation"}
+                  {createMutation.isPending ? "Saving..." : "Save Rotation"}
                 </Button>
               </DialogFooter>
             </form>

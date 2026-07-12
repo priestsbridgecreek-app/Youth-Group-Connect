@@ -54,6 +54,7 @@ export default function Sacrament() {
   const [autoFillPreview, setAutoFillPreview] = useState<{ date: string; memberIds: number[]; memberNames: string[] }[]>([]);
   const [isSavingAutoFill, setIsSavingAutoFill] = useState(false);
   const [autoFillGenerated, setAutoFillGenerated] = useState(false);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<number | null>(null);
 
   const { data: rotations, isLoading } = useListSacramentRotations(undefined, {
     query: { queryKey: getListSacramentRotationsQueryKey() },
@@ -372,14 +373,20 @@ export default function Sacrament() {
     }
   };
 
-  const handleDelete = async (id: number) => {
-    if (!confirm("Are you sure you want to delete this rotation?")) return;
+  const handleDelete = (id: number) => {
+    setDeleteConfirmId(id);
+  };
+
+  const confirmDelete = async () => {
+    if (deleteConfirmId === null) return;
     try {
-      await deleteMutation.mutateAsync({ id });
+      await deleteMutation.mutateAsync({ id: deleteConfirmId });
       queryClient.invalidateQueries({ queryKey: getListSacramentRotationsQueryKey() });
       toast({ title: "Rotation removed" });
     } catch {
       toast({ title: "Failed to delete rotation", variant: "destructive" });
+    } finally {
+      setDeleteConfirmId(null);
     }
   };
 
@@ -690,6 +697,30 @@ export default function Sacrament() {
               </DialogFooter>
             </form>
           </Form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={deleteConfirmId !== null} onOpenChange={(open) => { if (!open) setDeleteConfirmId(null); }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete this rotation?</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            This will permanently remove the rotation. This action cannot be undone.
+          </p>
+          <DialogFooter className="pt-2">
+            <Button variant="outline" onClick={() => setDeleteConfirmId(null)}>
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={confirmDelete}
+              disabled={deleteMutation.isPending}
+            >
+              {deleteMutation.isPending ? "Deleting..." : "Delete"}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 

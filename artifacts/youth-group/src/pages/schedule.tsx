@@ -22,7 +22,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { CalendarDays, Plus, Trash2, Library, Pencil, Link2, Check } from "lucide-react";
+import { CalendarDays, Plus, Trash2, Library, Pencil } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
@@ -51,17 +51,6 @@ export default function Schedule() {
   const [isQuickCreateOpen, setIsQuickCreateOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<ScheduledActivity | null>(null);
-  const [copied, setCopied] = useState(false);
-
-  const calendarUrl = `${window.location.origin}/api/calendar/activities.ics`;
-
-  const handleCopyCalendarUrl = () => {
-    navigator.clipboard.writeText(calendarUrl).then(() => {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    });
-  };
-
   const { data: scheduled, isLoading: isLoadingScheduled } = useListScheduledActivities(undefined, {
     query: { queryKey: getListScheduledActivitiesQueryKey() }
   });
@@ -458,32 +447,6 @@ export default function Schedule() {
           </Form>
         </DialogContent>
       </Dialog>
-
-      {/* Calendar subscription */}
-      <div className="flex flex-col sm:flex-row sm:items-center gap-3 bg-muted/40 border border-border rounded-lg px-4 py-3">
-        <div className="flex items-center gap-2 shrink-0 text-sm font-medium text-foreground">
-          <Link2 className="w-4 h-4 text-primary shrink-0" />
-          Subscribe to Calendar
-        </div>
-        <div className="flex-1 flex gap-2 min-w-0">
-          <input
-            readOnly
-            value={calendarUrl}
-            className="flex-1 min-w-0 text-xs bg-background border border-border rounded-md px-3 py-1.5 text-muted-foreground font-mono truncate select-all cursor-text"
-            onFocus={(e) => e.target.select()}
-          />
-          <Button size="sm" variant="outline" onClick={handleCopyCalendarUrl} className="shrink-0 gap-1.5">
-            {copied ? <Check className="w-3.5 h-3.5 text-green-500" /> : <Link2 className="w-3.5 h-3.5" />}
-            {copied ? "Copied!" : "Copy"}
-          </Button>
-        </div>
-        <p className="text-xs text-muted-foreground sm:hidden">
-          Add to Google Calendar → Other calendars → From URL. Updates automatically.
-        </p>
-      </div>
-      <p className="hidden sm:block -mt-6 text-xs text-muted-foreground">
-        Paste this URL into Google Calendar (Other calendars → From URL) or Apple Calendar (File → New Calendar Subscription). Updates automatically.
-      </p>
 
       {mineOnly && (
         <div className="flex items-center justify-between bg-primary/5 border border-primary/20 rounded-lg px-4 py-3">

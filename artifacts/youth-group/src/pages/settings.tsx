@@ -1,10 +1,21 @@
+import { useState } from "react";
 import { useAuth } from "@/lib/auth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Settings as SettingsIcon, Shield } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Settings as SettingsIcon, Shield, CalendarDays, Link2, Check } from "lucide-react";
 import { UserProfileCard } from "@/components/user-profile-card";
 
 export default function Settings() {
   const { user, refetch } = useAuth();
+  const [copied, setCopied] = useState(false);
+  const calendarUrl = `${window.location.origin}/api/calendar/activities.ics`;
+
+  const handleCopyCalendarUrl = () => {
+    navigator.clipboard.writeText(calendarUrl).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  };
 
   if (!user) return null;
 
@@ -17,6 +28,37 @@ export default function Settings() {
 
       <div className="grid gap-6">
         <UserProfileCard targetUser={user} onSaved={refetch} viewerCanManageSacramentExclusion={false} />
+
+        <Card className="border-border bg-muted/10">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <CalendarDays className="w-5 h-5 text-muted-foreground" />
+              Calendar Subscription
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <p className="text-sm text-muted-foreground">
+              Subscribe to the group activity calendar so it stays up to date automatically in your calendar app.
+            </p>
+            <div className="flex gap-2">
+              <input
+                readOnly
+                value={calendarUrl}
+                className="flex-1 min-w-0 text-xs bg-background border border-border rounded-md px-3 py-2 text-muted-foreground font-mono truncate cursor-text"
+                onFocus={(e) => e.target.select()}
+              />
+              <Button size="sm" variant="outline" onClick={handleCopyCalendarUrl} className="shrink-0 gap-1.5">
+                {copied ? <Check className="w-3.5 h-3.5 text-green-500" /> : <Link2 className="w-3.5 h-3.5" />}
+                {copied ? "Copied!" : "Copy URL"}
+              </Button>
+            </div>
+            <ul className="text-xs text-muted-foreground space-y-1 list-disc pl-4">
+              <li><strong>Google Calendar:</strong> Other calendars → From URL → paste → Add Calendar</li>
+              <li><strong>Apple Calendar:</strong> File → New Calendar Subscription → paste → Subscribe</li>
+              <li><strong>iPhone:</strong> Settings → Calendar → Accounts → Add Account → Other → Add Subscribed Calendar</li>
+            </ul>
+          </CardContent>
+        </Card>
 
         <Card className="border-border bg-muted/10">
           <CardHeader>

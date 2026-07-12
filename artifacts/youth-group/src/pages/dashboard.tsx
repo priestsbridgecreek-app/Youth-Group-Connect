@@ -121,7 +121,7 @@ export default function Dashboard() {
                             {isAssigned && <Badge variant="default">My Assignment</Badge>}
                           </div>
                           <div className="text-sm text-muted-foreground mt-1">
-                            {format(new Date(activity.date), "EEEE, MMMM do")}
+                            {format(new Date(activity.date + 'T00:00:00'), "EEEE, MMMM do")}
                           </div>
                         </div>
                         <div className="text-sm space-y-1">
@@ -162,7 +162,7 @@ export default function Dashboard() {
                         ${isAssigned ? "bg-blue-50/50 border-blue-200 dark:bg-blue-900/20 dark:border-blue-800" : "bg-card border-border"}`}
                     >
                       <div className="font-medium text-lg flex items-center gap-2">
-                        {format(new Date(rotation.date), "EEEE, MMMM do")}
+                        {format(new Date(rotation.date + 'T00:00:00'), "EEEE, MMMM do")}
                         {isAssigned && <Badge variant="outline" className="bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-900 dark:text-blue-100">My Assignment</Badge>}
                       </div>
                       <div className="text-sm flex gap-4 text-muted-foreground">
@@ -201,7 +201,7 @@ export default function Dashboard() {
                         ${isAssigned ? "bg-secondary/10 border-secondary/30" : "bg-card border-border"}`}
                     >
                       <div className="font-medium text-sm text-muted-foreground mb-1">
-                        {format(new Date(lesson.date), "EEEE, MMMM do")}
+                        {format(new Date(lesson.date + 'T00:00:00'), "EEEE, MMMM do")}
                       </div>
                       <div className="font-semibold text-lg flex items-center gap-2">
                         {lesson.title}

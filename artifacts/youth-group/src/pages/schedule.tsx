@@ -519,7 +519,7 @@ export default function Schedule() {
               <CardHeader className="flex flex-row justify-between items-start pb-2">
                 <div>
                   <div className="text-sm text-primary font-medium mb-1">
-                    {format(new Date(item.date), "EEEE, MMMM do, yyyy")}
+                    {format(new Date(item.date + 'T00:00:00'), "EEEE, MMMM do, yyyy")}
                   </div>
                   <CardTitle>{item.activityTitle}</CardTitle>
                 </div>

@@ -1,6 +1,6 @@
 import { Router } from "express";
-import { eq, and } from "drizzle-orm";
-import { db, usersTable, groupsTable } from "@workspace/db";
+import { eq, and, sql } from "drizzle-orm";
+import { db, usersTable, groupsTable, lessonsTable } from "@workspace/db";
 import { InviteUserBody, UpdateUserBody, ResetAccessCodeBody } from "@workspace/api-zod";
 import { requireAuth } from "../middlewares/auth";
 
@@ -184,8 +184,20 @@ router.delete("/users/:userId", requireAuth, async (req, res): Promise<void> => 
     res.status(404).json({ error: "Not found" });
     return;
   }
-  await db.delete(usersTable).where(and(eq(usersTable.id, userId), eq(usersTable.groupId, currentUser.groupId)));
-  res.status(204).send();
+  try {
+    // Remove user from lesson array columns before deleting
+    await db.update(lessonsTable)
+      .set({ assistingIds: sql`array_remove(${lessonsTable.assistingIds}, ${userId})` })
+      .where(eq(lessonsTable.groupId, currentUser.groupId));
+    await db.update(lessonsTable)
+      .set({ goalSharingIds: sql`array_remove(${lessonsTable.goalSharingIds}, ${userId})` })
+      .where(eq(lessonsTable.groupId, currentUser.groupId));
+    await db.delete(usersTable).where(and(eq(usersTable.id, userId), eq(usersTable.groupId, currentUser.groupId)));
+    res.status(204).send();
+  } catch (err) {
+    req.log.error({ err }, "Failed to delete user");
+    res.status(500).json({ error: "Failed to delete user" });
+  }
 });
 
 router.post("/users/:userId/reset-code", requireAuth, async (req, res): Promise<void> => {

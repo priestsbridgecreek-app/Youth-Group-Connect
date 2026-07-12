@@ -74,6 +74,7 @@ router.get("/sacrament-rotations/randomize", requireAuth, async (req, res): Prom
       eq(usersTable.groupId, currentUser.groupId),
       eq(usersTable.status, "active"),
       ne(usersTable.role, "leader"),
+      eq(usersTable.excludeFromSacrament, false),
     ));
 
   if (activeMembers.length === 0) {

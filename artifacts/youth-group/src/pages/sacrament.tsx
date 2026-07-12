@@ -65,10 +65,12 @@ export default function Sacrament() {
 
   const activeUsers = users?.filter((u) => u.status === "active" && u.role !== "leader" && !u.excludeFromSacrament) ?? [];
 
-  // Map each userId to their most-recent rotation date
+  // Map each userId to their most-recent PAST rotation date (future assignments don't count as served)
   const userLastAssigned = useMemo(() => {
+    const today = new Date().toISOString().split("T")[0];
     const map = new Map<number, string>();
     for (const rotation of rotations ?? []) {
+      if (rotation.date > today) continue;
       for (const member of rotation.members) {
         const existing = map.get(member.userId);
         if (!existing || rotation.date > existing) {

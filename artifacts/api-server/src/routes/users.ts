@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { eq, and, sql } from "drizzle-orm";
-import { db, usersTable, groupsTable, lessonsTable } from "@workspace/db";
+import { db, usersTable, groupsTable, lessonsTable, sacramentRotationMembersTable } from "@workspace/db";
 import { InviteUserBody, UpdateUserBody, ResetAccessCodeBody } from "@workspace/api-zod";
 import { requireAuth } from "../middlewares/auth";
 
@@ -185,7 +185,9 @@ router.delete("/users/:userId", requireAuth, async (req, res): Promise<void> => 
     return;
   }
   try {
-    // Remove user from lesson array columns before deleting
+    // Remove from sacrament rotation members
+    await db.delete(sacramentRotationMembersTable).where(eq(sacramentRotationMembersTable.userId, userId));
+    // Remove user from lesson array columns
     await db.update(lessonsTable)
       .set({ assistingIds: sql`array_remove(${lessonsTable.assistingIds}, ${userId})` })
       .where(eq(lessonsTable.groupId, currentUser.groupId));

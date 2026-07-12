@@ -8,6 +8,7 @@ import lessonsRouter from "./lessons";
 import sacramentRouter from "./sacrament";
 import substitutionsRouter from "./substitutions";
 import dashboardRouter from "./dashboard";
+import calendarRouter from "./calendar";
 
 const router: IRouter = Router();
 
@@ -20,5 +21,6 @@ router.use(lessonsRouter);
 router.use(sacramentRouter);
 router.use(substitutionsRouter);
 router.use(dashboardRouter);
+router.use(calendarRouter);
 
 export default router;

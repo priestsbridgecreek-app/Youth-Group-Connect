@@ -82,9 +82,30 @@ export default function Sacrament() {
     return map;
   }, [rotations]);
 
-  // Sort active users: never-assigned first, then by oldest assignment date
+  // Track members who already have a future rotation scheduled
+  const userNextScheduled = useMemo(() => {
+    const today = new Date().toISOString().split("T")[0];
+    const map = new Map<number, string>();
+    for (const rotation of rotations ?? []) {
+      if (rotation.date <= today) continue;
+      for (const member of rotation.members) {
+        const existing = map.get(member.userId);
+        if (!existing || rotation.date < existing) {
+          map.set(member.userId, rotation.date);
+        }
+      }
+    }
+    return map;
+  }, [rotations]);
+
+  // Sort active users: members with no upcoming assignment first, then by oldest past assignment date
   const sortedByOverdue = useMemo(() => {
     return [...activeUsers].sort((a, b) => {
+      const aHasUpcoming = userNextScheduled.has(a.id);
+      const bHasUpcoming = userNextScheduled.has(b.id);
+      // Members without any upcoming assignment are prioritised
+      if (aHasUpcoming !== bHasUpcoming) return aHasUpcoming ? 1 : -1;
+      // Within each group, sort by most overdue past assignment (oldest / never first)
       const aDate = userLastAssigned.get(a.id);
       const bDate = userLastAssigned.get(b.id);
       if (!aDate && !bDate) return 0;
@@ -92,7 +113,7 @@ export default function Sacrament() {
       if (!bDate) return 1;
       return aDate < bDate ? -1 : 1;
     });
-  }, [activeUsers, userLastAssigned]);
+  }, [activeUsers, userLastAssigned, userNextScheduled]);
 
   // Suggested = top 3 plus any ties at position 3
   const suggestedUserIds = useMemo(() => {

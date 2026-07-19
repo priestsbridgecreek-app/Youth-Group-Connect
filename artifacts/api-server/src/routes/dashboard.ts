@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { eq, and, gte, lte, sql } from "drizzle-orm";
+import { eq, and, gte, lte, sql, asc } from "drizzle-orm";
 import {
   db,
   scheduledActivitiesTable,
@@ -40,6 +40,7 @@ router.get("/dashboard", requireAuth, async (req, res): Promise<void> => {
       eq(scheduledActivitiesTable.groupId, currentUser.groupId),
       gte(scheduledActivitiesTable.date, today)
     ))
+    .orderBy(asc(scheduledActivitiesTable.date))
     .limit(5);
 
   // Get user names for activities
@@ -77,6 +78,7 @@ router.get("/dashboard", requireAuth, async (req, res): Promise<void> => {
       eq(sacramentRotationsTable.groupId, currentUser.groupId),
       gte(sacramentRotationsTable.date, today)
     ))
+    .orderBy(asc(sacramentRotationsTable.date))
     .limit(5);
 
   const rotationIds = upcomingRotationsRaw.map((r) => r.id);
@@ -126,6 +128,7 @@ router.get("/dashboard", requireAuth, async (req, res): Promise<void> => {
       eq(lessonsTable.groupId, currentUser.groupId),
       gte(lessonsTable.date, today)
     ))
+    .orderBy(asc(lessonsTable.date))
     .limit(5);
 
   const upcomingLessons = upcomingLessonsRaw
